@@ -21,7 +21,7 @@ namespace MarsOffice.Qeeps.Access
             var enumer = req.Headers.GetEnumerator();
 
             while (enumer.MoveNext()) {
-                res += "\r\n" + enumer.Current.Key + ": " + enumer.Current.Value;
+                res += "\r\n" + enumer.Current.Key + ": " + string.Join(", ", enumer.Current.Value);
             }
 
             var response = req.CreateResponse(HttpStatusCode.OK);
