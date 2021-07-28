@@ -16,9 +16,16 @@ namespace MarsOffice.Qeeps.Access
         {
             var logger = executionContext.GetLogger("test5");
             logger.LogInformation("C# HTTP trigger function processed a request.");
+            var res = "";
+
+            var enumer = req.Headers.GetEnumerator();
+
+            while (enumer.MoveNext()) {
+                res += "\r\n" + enumer.Current.Key + ": " + enumer.Current.Value;
+            }
 
             var response = req.CreateResponse(HttpStatusCode.OK);
-            await response.WriteAsJsonAsync(new {exe = identity?.Identity?.Name});
+            await response.WriteAsJsonAsync(new {exe = res});
             return response;
         }
     }
