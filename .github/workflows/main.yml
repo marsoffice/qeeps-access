@@ -60,6 +60,7 @@ jobs:
         with:
           name: 'dist'
           path: ./dist
+
           
       - name: Azure Login
         uses: Azure/login@v1
@@ -73,7 +74,7 @@ jobs:
               }
             
       - name: Azure Functions Action
-        uses: Azure/functions-action@v1.4.0
+        uses: Azure/functions-action@v1.3.2
         with:
           app-name: func-${{github.repository}}-stg
           package: ./dist
@@ -104,7 +105,7 @@ jobs:
               }
 
       - name: Azure Functions Action
-        uses: Azure/functions-action@v1.4.0
+        uses: Azure/functions-action@v1.3.2
         with:
           app-name: func-${{github.repository}}-prod
           package: ./dist
