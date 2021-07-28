@@ -77,7 +77,7 @@ jobs:
         uses: Azure/functions-action@v1.3.2
         with:
           package: ./dist
-          app-name: func-${{ github.repository }}-westeurope-stg
+          app-name: func-${{ github.workflow }}-westeurope-stg
           
   deploy_prod:
     if: ${{ success() && github.event_name != 'pull_request' && github.ref == 'refs/heads/master' }}
@@ -107,4 +107,4 @@ jobs:
         uses: Azure/functions-action@v1.3.2
         with:
           package: ./dist
-          app-name: func-${{ github.repository }}-westeurope-prod
+          app-name: func-${{ github.workflow }}-westeurope-prod
