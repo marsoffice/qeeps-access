@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System.Net;
+using System.Security.Claims;
 using System.Threading.Tasks;
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.Azure.Functions.Worker.Http;
@@ -11,7 +12,7 @@ namespace MarsOffice.Qeeps.AccessService
     {
         [Function("test")]
         public static async Task<HttpResponseData> Run([HttpTrigger(AuthorizationLevel.Anonymous, "get", "post")] HttpRequestData req,
-            FunctionContext executionContext)
+            FunctionContext executionContext, ClaimsPrincipal principal)
         {
             var logger = executionContext.GetLogger("test");
             logger.LogInformation("C# HTTP trigger function processed a request.");
