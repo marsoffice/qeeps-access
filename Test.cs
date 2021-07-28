@@ -1,26 +1,24 @@
-using System;
-using System.IO;
+using System.Collections.Generic;
+using System.Net;
 using System.Threading.Tasks;
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.Azure.WebJobs;
-using Microsoft.Azure.WebJobs.Extensions.Http;
-using Microsoft.AspNetCore.Http;
+using Microsoft.Azure.Functions.Worker;
+using Microsoft.Azure.Functions.Worker.Http;
 using Microsoft.Extensions.Logging;
-using Newtonsoft.Json;
 
 namespace MarsOffice.Qeeps.Access
 {
     public static class Test
     {
-        [FunctionName("test")]
-        public static async Task<IActionResult> Run(
-            [HttpTrigger(AuthorizationLevel.Anonymous, "get", "post", Route = null)] HttpRequest req,
-            ILogger log)
+        [Function("Test")]
+        public static async Task<HttpResponseData> Run([HttpTrigger(AuthorizationLevel.Anonymous, "get", "post")] HttpRequestData req,
+            FunctionContext executionContext)
         {
-            log.LogInformation("C# HTTP trigger function processed a request.");
+            var logger = executionContext.GetLogger("Test");
+            logger.LogInformation("C# HTTP trigger function processed a request.");
 
-            await Task.CompletedTask;
-            return new OkObjectResult(new {Hi = "Alin"});
+            var response = req.CreateResponse(HttpStatusCode.OK);
+            await response.WriteAsJsonAsync(new {ee = "asd"});
+            return response;
         }
     }
 }
