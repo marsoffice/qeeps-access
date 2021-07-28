@@ -1,32 +1,30 @@
-using System.Collections.Generic;
-using System.Net;
+using System;
+using System.IO;
+using System.Linq;
 using System.Security.Claims;
 using System.Threading.Tasks;
-using Microsoft.Azure.Functions.Worker;
-using Microsoft.Azure.Functions.Worker.Http;
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.Azure.WebJobs;
+using Microsoft.Azure.WebJobs.Extensions.Http;
 using Microsoft.Extensions.Logging;
+using Newtonsoft.Json;
 
 namespace MarsOffice.Qeeps.Access
 {
     public static class Test
     {
-        [Function("test")]
-        public static async Task<HttpResponseData> Run([HttpTrigger(AuthorizationLevel.Anonymous, "get", "post")] HttpRequestData req,
-            FunctionContext executionContext, ClaimsPrincipal identity)
+        [FunctionName("Test")]
+        public static async Task<IActionResult> Run(
+            [HttpTrigger(AuthorizationLevel.Anonymous, "get", "post", Route = null)] HttpRequest req,
+            ILogger log, ClaimsPrincipal cp)
         {
-            var logger = executionContext.GetLogger("test5");
-            logger.LogInformation("C# HTTP trigger function processed a request.");
-            var res = "";
+            var res = string.Join("\r\n",
 
-            var enumer = req.Headers.GetEnumerator();
+            req.Headers.Select(x => x.Key + ": " + string.Join(",", x.Value)).ToList());
 
-            while (enumer.MoveNext()) {
-                res += "\r\n" + enumer.Current.Key + ": " + string.Join(", ", enumer.Current.Value);
-            }
-
-            var response = req.CreateResponse(HttpStatusCode.OK);
-            await response.WriteAsJsonAsync(new {exe = res});
-            return response;
+            log.LogInformation("C# HTTP trigger function processed a request.");
+            return new OkObjectResult(new { test = cp?.Identity?.Name, res = res });
         }
     }
 }
