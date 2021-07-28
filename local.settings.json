@@ -2,9 +2,9 @@
   "IsEncrypted": false,
   "Values": {
     "AzureWebJobsStorage": "",
-    "FUNCTIONS_WORKER_RUNTIME": "dotnet-isolated"
+    "FUNCTIONS_WORKER_RUNTIME": "dotnet"
   },
   "Host": {
-    "LocalHttpPort": "7001"
+    "LocalHttpPort": 7001
   }
 }
