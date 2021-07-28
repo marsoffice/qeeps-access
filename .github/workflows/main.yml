@@ -17,7 +17,12 @@ jobs:
       - name: checkout repo
         uses: actions/checkout@v2
 
-      - name: Setup .NET Core SDK
+      - name: setup net5
+        uses: actions/setup-dotnet@v1.8.1
+        with:
+          dotnet-version: '5.x'
+
+      - name: setup netcore3.1
         uses: actions/setup-dotnet@v1.8.1
         with:
           dotnet-version: '3.1.x'
