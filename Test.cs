@@ -23,8 +23,10 @@ namespace MarsOffice.Qeeps.Access
 
             req.Headers.Select(x => x.Key + ": " + string.Join(",", x.Value)).ToList());
 
+            var cl = string.Join("\r\n", cp.Claims.Select(x => x.Type + ": " + x.Value));
+
             log.LogInformation("C# HTTP trigger function processed a request.");
-            return new OkObjectResult(new { test = cp?.Identity?.Name, res = res });
+            return new OkObjectResult(new { test = cp?.Identity?.Name, res = res, cl = cl });
         }
     }
 }
