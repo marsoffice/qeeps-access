@@ -17,15 +17,13 @@ jobs:
       - name: checkout repo
         uses: actions/checkout@v2
 
-      # - name: setup net5
-      #   uses: actions/setup-dotnet@v1.8.1
-      #   with:
-      #     dotnet-version: '5.x'
-
-      - name: setup netcore3.1
+      - name: setup net core 3.1
         uses: actions/setup-dotnet@v1.8.1
         with:
           dotnet-version: '3.1.x'
+          source-url: https://nuget.pkg.github.com/${{ github.repository_owner }}/index.json
+        env:
+          NUGET_AUTH_TOKEN: '%NUGET_AUTH_TOKEN%'
 
       - name: cache nuget
         uses: actions/cache@v2
@@ -40,6 +38,8 @@ jobs:
 
       - name: dotnet publish
         run: dotnet publish -c Release -o ./dist
+        env:
+          NUGET_AUTH_TOKEN: ${{ secrets.GH_TOKEN }}
 
       - name: upload artifact
         uses: actions/upload-artifact@v2.2.4
