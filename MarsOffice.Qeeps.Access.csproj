@@ -6,8 +6,8 @@
     <_FunctionsSkipCleanOutput>true</_FunctionsSkipCleanOutput>
   </PropertyGroup>
   <ItemGroup>
+    <PackageReference Include="MarsOffice.Qeeps.Microfunction" Version="1.1.0" />
     <PackageReference Include="Microsoft.NET.Sdk.Functions" Version="3.0.13" />
-    <PackageReference Include="MarsOffice.Qeeps.Microfunction" Version="1.0.8" />
   </ItemGroup>
   <ItemGroup>
     <None Update="host.json">
