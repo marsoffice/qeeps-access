@@ -1,5 +1,3 @@
-using System;
-using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using MarsOffice.Qeeps.Microfunction;
@@ -11,10 +9,15 @@ using Microsoft.Extensions.Logging;
 
 namespace MarsOffice.Qeeps.Access
 {
-    public static class Test
+    public class Test
     {
+        public Test()
+        {
+
+        }
+
         [FunctionName("Test")]
-        public static async Task<IActionResult> Run(
+        public async Task<IActionResult> Run(
             [HttpTrigger(AuthorizationLevel.Anonymous, "get", "post", Route = null)] HttpRequest req,
             ILogger log)
         {
