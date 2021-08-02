@@ -11,6 +11,85 @@ defaults:
     shell: bash
 
 jobs:
+  build_nuget:
+    runs-on: ubuntu-latest
+    steps:
+      - name: checkout repo
+        uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+
+      - name: install gv
+        uses: gittools/actions/gitversion/setup@v0.9.7
+        with:
+          versionSpec: "5.5.0"
+
+      - name: execute gv
+        id: gitversion
+        uses: gittools/actions/gitversion/execute@v0.9.7
+        with:
+          useConfigFile: true
+          configFilePath: "GitVersion.yml"
+
+      - name: setup net core 3.1
+        uses: actions/setup-dotnet@v1.8.1
+        with:
+          dotnet-version: '3.1.x'
+          source-url: https://nuget.pkg.github.com/${{ github.repository_owner }}/index.json
+        env:
+          NUGET_AUTH_TOKEN: '%NUGET_AUTH_TOKEN%'
+
+      - name: cache nuget
+        uses: actions/cache@v2
+        id: cache-nuget
+        env:
+          cache-name: cache-nuget
+        with:
+          path: ~/.nuget/packages
+          key: ${{ runner.os }}-nuget-${{ env.cache-name }}
+          restore-keys: |
+            ${{ runner.os }}-nuget-
+
+      - name: dotnet build
+        run: dotnet build -c Release -p:PackageVersion=${{ steps.gitversion.outputs.semVer }} ./MarsOffice.Qeeps.Access.Abstractions
+
+      - name: dotnet pack
+        run: dotnet pack -c Release -p:PackageVersion=${{ steps.gitversion.outputs.semVer }} -o ./dist --no-build ./MarsOffice.Qeeps.Access.Abstractions
+
+      - name: upload artifact
+        uses: actions/upload-artifact@v2.2.4
+        if: ${{ success() && github.event_name != 'pull_request' && (github.ref == 'refs/heads/master' || github.ref == 'refs/heads/develop') }}
+        with:
+          name: dist_nuget
+          path: ./dist
+
+
+
+  push:
+    runs-on: ubuntu-latest
+    if: ${{ success() && github.event_name != 'pull_request' && (github.ref == 'refs/heads/master' || github.ref == 'refs/heads/develop') }}
+    needs: [build_nuget]
+    steps:
+      - name: download artifact
+        uses: actions/download-artifact@v2.0.10
+        with:
+          name: 'dist_nuget'
+          path: .
+
+      - name: setup net core 3.1
+        uses: actions/setup-dotnet@v1.8.1
+        with:
+          dotnet-version: '3.1.x'
+          source-url: https://nuget.pkg.github.com/${{ github.repository_owner }}/index.json
+        env:
+          NUGET_AUTH_TOKEN: '%NUGET_AUTH_TOKEN%'
+
+      - name: dotnet nuget push
+        run: dotnet nuget push *.nupkg --no-symbols --skip-duplicate
+        env:
+          NUGET_AUTH_TOKEN: ${{ secrets.GH_TOKEN }}
+
+
   build:
     runs-on: ubuntu-latest
     steps:
@@ -39,7 +118,7 @@ jobs:
             ${{ runner.os }}-nuget-
 
       - name: dotnet publish
-        run: dotnet publish -c Release -o ./dist
+        run: dotnet publish -c Release -o ./dist ./MarsOffice.Qeeps.Access
         env:
           NUGET_AUTH_TOKEN: ${{ secrets.GH_TOKEN }}
 
