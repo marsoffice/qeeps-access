@@ -27,9 +27,16 @@ namespace MarsOffice.Qeeps.Access
         {
             builder.Services.AddTransient(_ =>
             {
-                var tokenCredential = new DefaultAzureCredential();
+                TokenCredential tokenCredential = null;
+
+                if (builder.GetContext().EnvironmentName.ToLower() == "development") {
+                    tokenCredential = new AzureCliCredential();
+                } else {
+                    tokenCredential = new DefaultAzureCredential();
+                }
                 var accessToken = tokenCredential.GetToken(
-                    new TokenRequestContext(scopes: new string[] { "https://graph.microsoft.com/.default" }) { }
+                    new TokenRequestContext(scopes: new string[] { "https://graph.microsoft.com/.default" }),
+                    cancellationToken: System.Threading.CancellationToken.None
                 );
                 var graphServiceClient = new GraphServiceClient(
                     new DelegateAuthenticationProvider((requestMessage) =>
