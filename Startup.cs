@@ -25,7 +25,7 @@ namespace MarsOffice.Qeeps.Access
 
         public override void Configure(IFunctionsHostBuilder builder)
         {
-            builder.Services.AddScoped(_ =>
+            builder.Services.AddTransient(_ =>
             {
                 var tokenCredential = new DefaultAzureCredential();
                 var accessToken = tokenCredential.GetToken(
