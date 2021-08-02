@@ -18,13 +18,20 @@ namespace MarsOffice.Qeeps.Access
             _graphClient = graphClient;
         }
 
-        [FunctionName("GetAllGroups")]
+        [FunctionName("MyGroups")]
         public async Task<IActionResult> Run(
             [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = null)] HttpRequest req,
             ILogger log)
         {
-            var allGroups = await _graphClient.Groups.Request().GetAsync();
-            return new OkObjectResult(allGroups);
+            var principal = QeepsPrincipal.Parse(req);
+            var groupIds = principal.FindAll(x => x.Type == "groups").Select(x => x.Value).Distinct().ToList();
+            var odataGroupsFilter = $"({string.Join(",", groupIds.Select(x => "'" + x + "'").ToList())})";
+            var myGroups = await _graphClient.Groups.Request()
+                .Filter($"id in {odataGroupsFilter}")
+                .Expand(x => x.MemberOf)
+                .Select(x => new {x.Id, x.DisplayName, x.MemberOf})
+                .GetAsync();
+            return new OkObjectResult(myGroups);
         }
     }
 }
