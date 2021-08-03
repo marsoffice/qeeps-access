@@ -1,3 +1,4 @@
+using System;
 using System.IO;
 using System.Net.Http.Headers;
 using System.Threading.Tasks;
@@ -28,8 +29,10 @@ namespace MarsOffice.Qeeps.Access
             builder.Services.AddTransient(_ =>
             {
                 TokenCredential tokenCredential = null;
-
-                if (builder.GetContext().EnvironmentName.ToLower() == "development") {
+                var hostBuilderContext = builder.GetContext();
+                var envVar = Environment.GetEnvironmentVariable("AZURE_FUNCTIONS_ENVIRONMENT");
+                var isDevelopmentEnvironment = string.IsNullOrEmpty(envVar) || envVar.ToLower().Contains("development");
+                if (isDevelopmentEnvironment) {
                     tokenCredential = new AzureCliCredential();
                 } else {
                     tokenCredential = new DefaultAzureCredential();
