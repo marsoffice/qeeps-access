@@ -65,7 +65,7 @@ jobs:
 
 
 
-  push:
+  nuget_push:
     runs-on: ubuntu-latest
     if: ${{ success() && github.event_name != 'pull_request' && (github.ref == 'refs/heads/master' || github.ref == 'refs/heads/develop') }}
     needs: [build_nuget]
