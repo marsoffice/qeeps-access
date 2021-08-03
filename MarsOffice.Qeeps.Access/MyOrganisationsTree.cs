@@ -26,7 +26,7 @@ namespace MarsOffice.Qeeps.Access
             var odataGroupsFilter = $"({string.Join(",", groupIds.Select(x => "'" + x + "'").ToList())})";
             var myGroups = await _graphClient.Groups.Request()
                 .Filter($"id in {odataGroupsFilter}")
-                .Expand(x => x.MemberOf)
+                .Expand($"memberOf($select=id)")
                 .Select(x => new {x.Id, x.DisplayName, x.MemberOf})
                 .GetAsync();
             var rootGroup = myGroups.Where(x => x.MemberOf == null || !x.MemberOf.Any()).Select(x => new OrganisationDto {
