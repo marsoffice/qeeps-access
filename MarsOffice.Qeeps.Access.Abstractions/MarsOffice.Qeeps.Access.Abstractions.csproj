@@ -3,6 +3,12 @@
   <PropertyGroup>
     <TargetFramework>netstandard2.0</TargetFramework>
     <IsPackable>true</IsPackable>
+    <PackageId>MarsOffice.Qeeps.Access.Abstractions</PackageId>
+    <Authors>marsoffice</Authors>
+    <Company>marsoffice</Company>
+    <PackageDescription>marsoffice</PackageDescription>
+    <RepositoryUrl>https://github.com/marsoffice/qeeps-access</RepositoryUrl>
+ 
   </PropertyGroup>
 
 </Project>
