@@ -52,6 +52,8 @@ jobs:
 
       - name: dotnet build
         run: dotnet build -c Release -p:PackageVersion=${{ steps.gitversion.outputs.semVer }} MarsOffice.Qeeps.Access.sln
+        env:
+          NUGET_AUTH_TOKEN: ${{ secrets.GH_TOKEN }}
 
       - name: dotnet pack
         run: dotnet pack -c Release -p:PackageVersion=${{ steps.gitversion.outputs.semVer }} -o ./dist --no-build MarsOffice.Qeeps.Access.sln
