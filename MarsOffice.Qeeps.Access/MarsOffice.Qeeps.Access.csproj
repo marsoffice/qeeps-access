@@ -4,6 +4,7 @@
     <AzureFunctionsVersion>v3</AzureFunctionsVersion>
     <RootNamespace>MarsOffice.Qeeps.Access</RootNamespace>
     <_FunctionsSkipCleanOutput>true</_FunctionsSkipCleanOutput>
+    <IsPackable>false</IsPackable>
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="../MarsOffice.Qeeps.Access.Abstractions/MarsOffice.Qeeps.Access.Abstractions.csproj" />
