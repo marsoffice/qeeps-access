@@ -31,7 +31,7 @@ namespace MarsOffice.Qeeps.Access
                 TokenCredential tokenCredential = null;
                 var hostBuilderContext = builder.GetContext();
                 var envVar = Environment.GetEnvironmentVariable("AZURE_FUNCTIONS_ENVIRONMENT");
-                var isDevelopmentEnvironment = string.IsNullOrEmpty(envVar) || envVar.ToLower().Contains("development");
+                var isDevelopmentEnvironment = string.IsNullOrEmpty(envVar) || envVar.ToLower() == "development";
                 if (isDevelopmentEnvironment) {
                     tokenCredential = new AzureCliCredential();
                 } else {
