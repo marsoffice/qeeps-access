@@ -8,8 +8,9 @@ using Microsoft.Graph;
 
 namespace MarsOffice.Qeeps.Access
 {
-    class DeltaFile {
-        public string Delta {get;set;}
+    class DeltaFile
+    {
+        public string Delta { get; set; }
     }
 
     public class PopulateRedisGroups
@@ -21,12 +22,13 @@ namespace MarsOffice.Qeeps.Access
         }
 
         [FunctionName("PopulateRedisGroups")]
-        public async Task Run([TimerTrigger("0 */5 * * * *", RunOnStartup = true)]TimerInfo myTimer,
+        public async Task Run([TimerTrigger("0 */5 * * * *", RunOnStartup = true)] TimerInfo myTimer,
         [Blob("graph-api/delta.json", FileAccess.Read)] Stream deltaFile,
         ILogger log)
         {
             string lastDelta = null;
-            if (deltaFile != null && deltaFile.CanRead) {
+            if (deltaFile != null && deltaFile.CanRead)
+            {
                 var deserialized = await JsonSerializer.DeserializeAsync<DeltaFile>(deltaFile);
                 lastDelta = deserialized.Delta;
             }
