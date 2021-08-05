@@ -8,6 +8,7 @@ using Microsoft.Azure.Functions.Extensions.DependencyInjection;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Graph;
+using StackExchange.Redis;
 
 [assembly: FunctionsStartup(typeof(MarsOffice.Qeeps.Access.Startup))]
 namespace MarsOffice.Qeeps.Access
@@ -32,12 +33,16 @@ namespace MarsOffice.Qeeps.Access
                 var hostBuilderContext = builder.GetContext();
                 var envVar = Environment.GetEnvironmentVariable("AZURE_FUNCTIONS_ENVIRONMENT");
                 var isDevelopmentEnvironment = string.IsNullOrEmpty(envVar) || envVar.ToLower() == "development";
-                
-                if (isDevelopmentEnvironment) {
+
+                if (isDevelopmentEnvironment)
+                {
                     tokenCredential = new AzureCliCredential();
-                } else {
+                }
+                else
+                {
                     tokenCredential = new DefaultAzureCredential();
                 }
+
                 var accessToken = tokenCredential.GetToken(
                     new TokenRequestContext(scopes: new string[] { "https://graph.microsoft.com/.default" }),
                     cancellationToken: System.Threading.CancellationToken.None
@@ -51,6 +56,12 @@ namespace MarsOffice.Qeeps.Access
                     return Task.CompletedTask;
                 }));
                 return graphServiceClient;
+            });
+
+            builder.Services.AddSingleton(_ =>
+            {
+                var mux = ConnectionMultiplexer.Connect(builder.GetContext().Configuration["redisconnectionstring"]);
+                return mux.GetDatabase();
             });
         }
     }

@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using Microsoft.Azure.WebJobs;
 using Microsoft.Extensions.Logging;
 using Microsoft.Graph;
+using StackExchange.Redis;
 
 namespace MarsOffice.Qeeps.Access
 {
@@ -16,9 +17,11 @@ namespace MarsOffice.Qeeps.Access
     public class PopulateRedisGroups
     {
         private readonly GraphServiceClient _graphClient;
-        public PopulateRedisGroups(GraphServiceClient graphClient)
+        private readonly IDatabase _redisDb;
+        public PopulateRedisGroups(GraphServiceClient graphClient, IDatabase redisDb)
         {
             _graphClient = graphClient;
+            _redisDb = redisDb;
         }
 
         [FunctionName("PopulateRedisGroups")]
@@ -27,11 +30,17 @@ namespace MarsOffice.Qeeps.Access
         ILogger log)
         {
             string lastDelta = null;
-            if (deltaFile != null && deltaFile.CanRead)
+            var isRedisEmpty = !await _redisDb.KeyExistsAsync("dummy");
+
+            if (!isRedisEmpty && deltaFile != null && deltaFile.CanRead)
             {
                 var deserialized = await JsonSerializer.DeserializeAsync<DeltaFile>(deltaFile);
                 lastDelta = deserialized.Delta;
             }
+
+            var groups = await _graphClient.Groups.Request()
+                .GetAsync();
+            
             log.LogInformation($"C# Timer trigger function executed at: {DateTime.Now}");
             await Task.CompletedTask;
         }
