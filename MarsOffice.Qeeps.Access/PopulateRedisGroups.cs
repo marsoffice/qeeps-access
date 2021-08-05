@@ -38,7 +38,8 @@ namespace MarsOffice.Qeeps.Access
                 lastDelta = deserialized.Delta;
             }
 
-            var groups = await _graphClient.Groups.Request()
+            var groups = await _graphClient.Groups.Delta()
+                .Request()
                 .GetAsync();
             
             log.LogInformation($"C# Timer trigger function executed at: {DateTime.Now}");
