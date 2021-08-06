@@ -33,7 +33,7 @@ namespace MarsOffice.Qeeps.Access
         }
 
         [FunctionName("PopulateRedisGroups")]
-        public async Task Run([TimerTrigger("0 */5 * * * *", RunOnStartup = true)] TimerInfo myTimer,
+        public async Task Run([TimerTrigger("0 */15 * * * *", RunOnStartup = true)] TimerInfo myTimer,
         [Blob("graph-api/delta.json", FileAccess.Read)] Stream deltaFile,
         [Blob("graph-api/delta.json", FileAccess.Write)] Stream deltaFileWrite,
         ILogger log)
