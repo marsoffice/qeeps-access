@@ -61,7 +61,7 @@ namespace MarsOffice.Qeeps.Access
             builder.Services.AddSingleton(_ =>
             {
                 var mux = ConnectionMultiplexer.Connect(builder.GetContext().Configuration["redisconnectionstring"]);
-                return mux.GetDatabase();
+                return mux;
             });
         }
     }
