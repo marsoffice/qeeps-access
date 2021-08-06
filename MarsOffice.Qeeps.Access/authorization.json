@@ -1,0 +1,12 @@
+{
+    "routes": [
+      {
+        "path_prefix": "/api/access",
+        "policies": { "unauthenticated_action": "RejectWith401" }
+      },
+      {
+        "path_prefix": "/healthcheck",
+        "policies": { "unauthenticated_action": "AllowAnonymous" }
+      }
+    ]
+  }

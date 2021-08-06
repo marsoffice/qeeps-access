@@ -89,7 +89,9 @@ namespace MarsOffice.Qeeps.Access
                     nextDelta = response.AdditionalData["@odata.deltaLink"] as string;
                 }
 
+                foreach (var group in response.CurrentPage) {
 
+                }
 
 
 

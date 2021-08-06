@@ -19,7 +19,7 @@ namespace MarsOffice.Qeeps.Access
 
         [FunctionName("MyOrganisationsTree")]
         public async Task<OrganisationDto> Run(
-            [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = null)] HttpRequest req)
+            [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "api/access/myOrganisationsTree")] HttpRequest req)
         {
             var principal = QeepsPrincipal.Parse(req);
             var groupIds = principal.FindAll(x => x.Type == "groups").Select(x => x.Value).Distinct().ToList();
