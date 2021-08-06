@@ -3,6 +3,7 @@ using System.Threading.Tasks;
 using MarsOffice.Qeeps.Access.Abstractions;
 using MarsOffice.Qeeps.Microfunction;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.Azure.WebJobs;
 using Microsoft.Azure.WebJobs.Extensions.Http;
 using Microsoft.Graph;
@@ -18,10 +19,13 @@ namespace MarsOffice.Qeeps.Access
         }
 
         [FunctionName("MyOrganisationsTree")]
-        public async Task<OrganisationDto> Run(
+        public async Task<IActionResult> Run(
             [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "api/access/myOrganisationsTree")] HttpRequest req)
         {
             var principal = QeepsPrincipal.Parse(req);
+            if (!principal.Identity.IsAuthenticated) {
+                return new UnauthorizedResult();
+            }
             var groupIds = principal.FindAll(x => x.Type == "groups").Select(x => x.Value).Distinct().ToList();
             var odataGroupsFilter = $"({string.Join(",", groupIds.Select(x => "'" + x + "'").ToList())})";
             var myGroups = await _graphClient.Groups.Request()
@@ -34,7 +38,7 @@ namespace MarsOffice.Qeeps.Access
                 Name = x.DisplayName
             }).Single();
             PopulateChildren(rootGroup, myGroups);
-            return rootGroup;
+            return new OkObjectResult(rootGroup);
         }
 
         private void PopulateChildren(OrganisationDto rootGroup, IGraphServiceGroupsCollectionPage myGroups)
