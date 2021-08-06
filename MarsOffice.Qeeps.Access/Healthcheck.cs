@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Azure.WebJobs;
 using Microsoft.Azure.WebJobs.Extensions.Http;
+using Microsoft.Extensions.Configuration;
 using StackExchange.Redis;
 
 namespace MarsOffice.Qeeps.Access
@@ -12,10 +13,10 @@ namespace MarsOffice.Qeeps.Access
         private readonly ConnectionMultiplexer _mux;
         private readonly IDatabase _redisDb;
 
-        public Healthcheck(ConnectionMultiplexer mux)
+        public Healthcheck(ConnectionMultiplexer mux, IConfiguration config)
         {
             _mux = mux;
-            _redisDb = mux.GetDatabase();
+            _redisDb = mux.GetDatabase(config.GetValue<int>("redisdatabase"));
         }
 
         [FunctionName("Healthcheck")]

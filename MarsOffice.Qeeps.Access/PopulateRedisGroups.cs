@@ -27,7 +27,7 @@ namespace MarsOffice.Qeeps.Access
         {
             _graphClient = graphClient;
             _mux = mux;
-            _redisDb = mux.GetDatabase();
+            _redisDb = mux.GetDatabase(config.GetValue<int>("redisdatabase"));
             _server = mux.GetServer(mux.GetEndPoints()[0]);
             _config = config;
         }
@@ -47,49 +47,59 @@ namespace MarsOffice.Qeeps.Access
                 lastDelta = deserialized.Delta;
             }
 
-            if (isRedisEmpty) {
+            if (isRedisEmpty)
+            {
                 await PopulateGroupsRecursively(_config["adgroupid"]);
                 await PopulateGroupsDelta(deltaFileWrite, lastDelta);
                 await _redisDb.StringSetAsync($"dummy", "dummy");
-            } else {
+            }
+            else
+            {
                 await PopulateGroupsDelta(deltaFileWrite, lastDelta);
             }
         }
 
-        private async Task PopulateGroupsRecursively(string id, string prefix = "") {
+        private async Task PopulateGroupsRecursively(string id, string prefix = "")
+        {
             var group = (await _graphClient
                 .Groups
                 .Request()
                 .Filter($"id eq '{id}'")
-                .Select(x => new {x.Id, x.DisplayName}).GetAsync()).CurrentPage[0];
-           await _redisDb.StringSetAsync($"{prefix}_{group.Id}", group.DisplayName);
+                .Select(x => new { x.Id, x.DisplayName }).GetAsync()).CurrentPage[0];
+            await _redisDb.StringSetAsync($"{prefix}_{group.Id}", group.DisplayName);
 
-           var membersRequest = _graphClient.Groups[id]
-            .Members
-            .Request();
+            var membersRequest = _graphClient.Groups[id]
+             .Members
+             .Request();
 
-            while (membersRequest != null) {
+            while (membersRequest != null)
+            {
                 var response = await membersRequest.GetAsync();
-                foreach (var child in response.CurrentPage.Where(x => x.ODataType == "#microsoft.graph.group").ToList()) {
+                foreach (var child in response.CurrentPage.Where(x => x.ODataType == "#microsoft.graph.group").ToList())
+                {
                     await PopulateGroupsRecursively(child.Id, $"{prefix}_{id}");
                 }
                 membersRequest = response.NextPageRequest;
             }
         }
 
-        private async Task PopulateGroupsDelta(Stream stream, string lastDelta) {
+        private async Task PopulateGroupsDelta(Stream stream, string lastDelta)
+        {
             var lastDeltaRequest = _graphClient
                 .Groups.Delta()
                 .Request();
             lastDeltaRequest.QueryOptions.Add(new QueryOption("$deltaToken", lastDelta));
             string nextDelta = null;
-            while (lastDeltaRequest != null) {
+            while (lastDeltaRequest != null)
+            {
                 var response = await lastDeltaRequest.GetAsync();
-                if (nextDelta == null) {
+                if (nextDelta == null)
+                {
                     nextDelta = response.AdditionalData["@odata.deltaLink"] as string;
                 }
 
-                foreach (var group in response.CurrentPage) {
+                foreach (var group in response.CurrentPage)
+                {
 
                 }
 
@@ -97,7 +107,8 @@ namespace MarsOffice.Qeeps.Access
 
                 lastDeltaRequest = response.NextPageRequest;
             }
-            var obj = new DeltaFile {
+            var obj = new DeltaFile
+            {
                 Delta = nextDelta.Split("?")[1].Replace("$deltatoken=", "")
             };
             await JsonSerializer.SerializeAsync(stream, obj);
