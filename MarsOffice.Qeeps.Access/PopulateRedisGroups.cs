@@ -50,6 +50,7 @@ namespace MarsOffice.Qeeps.Access
 
             if (isRedisEmpty)
             {
+                await _server.FlushDatabaseAsync(_config.GetValue<int>("redisdatabase"));
                 await PopulateGroupsRecursively(_config["adgroupid"]);
                 await PopulateGroupsDelta(deltaFileWrite, lastDelta);
                 await _redisDb.StringSetAsync($"dummy", "dummy");
