@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using MarsOffice.Qeeps.Access.Abstractions;
@@ -15,10 +16,12 @@ namespace MarsOffice.Qeeps.Access
     public class MyOrganisationsTree
     {
         private readonly IServer _server;
+        private readonly IDatabase _database;
         private readonly IConfiguration _config;
         public MyOrganisationsTree(ConnectionMultiplexer mux, IConfiguration config)
         {
             _server = mux.GetServer(mux.GetEndPoints()[0]);
+            _database = mux.GetDatabase(config.GetValue<int>("redisdatabase"));
             _config = config;
         }
 
@@ -27,19 +30,53 @@ namespace MarsOffice.Qeeps.Access
             [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "api/access/myOrganisationsTree")] HttpRequest req)
         {
             var principal = QeepsPrincipal.Parse(req);
-            if (!principal.Identity.IsAuthenticated) {
+            if (!principal.Identity.IsAuthenticated)
+            {
                 return new UnauthorizedResult();
             }
             var groupIds = principal.FindAll(x => x.Type == "groups").Select(x => x.Value).Distinct().ToList();
-            foreach (var id in groupIds) {
-                var keys = _server.Keys(_config.GetValue<int>("redisdatabase"), $"*_{id}").ToList();
+            var ids = new Dictionary<string, string>();
+            foreach (var id in groupIds)
+            {
+                var foundKeys = _server.Keys(_config.GetValue<int>("redisdatabase"), $"*_{id}").ToList();
+                if (!foundKeys.Any())
+                {
+                    continue;
+                }
+                var key = foundKeys.First().ToString();
+                var value = await _database.StringGetAsync(key);
+                if (!value.HasValue)
+                {
+                    continue;
+                }
+                var strValue = value.ToString();
+                ids[key] = strValue;
             }
-            return new OkObjectResult(null);
+
+            var rootGroup = new OrganisationDto {
+                Id = _config["adgroupid"],
+                Name = ids[$"_{_config["adgroupid"]}"]
+            };
+
+            ids = ids.Where(x => x.Key != $"_{_config["adgroupid"]}").ToDictionary(x => x.Key, x => x.Value);
+            PopulateChildren(rootGroup, ids);
+
+            return new OkObjectResult(rootGroup);
         }
 
-        private void PopulateChildren(OrganisationDto rootGroup)
+        private void PopulateChildren(OrganisationDto rootGroup, Dictionary<string, string> ids)
         {
-            
+            var foundChildrenDict = ids.Where(x => x.Key.StartsWith($"_{rootGroup.Id}")).ToDictionary(x => x.Key.Replace($"_{rootGroup.Id}", ""), x => x.Value);
+            if (!foundChildrenDict.Any()) {
+                return;
+            }
+            rootGroup.Children = foundChildrenDict.Where(x => x.Key.Count(x => x == '_') == 1).Select(x => new OrganisationDto {
+                Id = x.Key.Substring(1),
+                Name = x.Value
+            }).ToList();
+            foreach (var kid in rootGroup.Children) {
+                PopulateChildren(kid, foundChildrenDict);
+            }
         }
     }
 }
