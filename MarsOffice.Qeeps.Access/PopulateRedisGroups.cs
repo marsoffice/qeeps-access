@@ -99,7 +99,7 @@ namespace MarsOffice.Qeeps.Access
                 {
                     nextDelta = response.AdditionalData["@odata.deltaLink"] as string;
                 }
-                foreach (var group in response.CurrentPage.OrderBy(x => x.AdditionalData).ToList())
+                foreach (var group in response.CurrentPage)
                 {
                     var foundKeys = _server.Keys(_config.GetValue<int>("redisdatabase"), $"*_{group.Id}");
                     if (foundKeys.Any())
