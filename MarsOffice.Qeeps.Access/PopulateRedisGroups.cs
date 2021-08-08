@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text.Json;
@@ -97,10 +98,35 @@ namespace MarsOffice.Qeeps.Access
                 {
                     nextDelta = response.AdditionalData["@odata.deltaLink"] as string;
                 }
-
                 foreach (var group in response.CurrentPage)
                 {
+                    var foundKeys = _server.Keys(_config.GetValue<int>("redisdatabase"), $"*_{group.Id}");
+                    if (foundKeys.Any())
+                    {
+                        if (group.AdditionalData != null && group.AdditionalData.ContainsKey("@removed"))
+                        {
+                            await _redisDb.KeyDeleteAsync(foundKeys.ToArray());
+                            var allKeysToDelete = _server.Keys(_config.GetValue<int>("redisdatabase"), $"*_{group.Id}_*");
+                            foreach (var keyToDelete in allKeysToDelete) {
+                                var newKey = keyToDelete.ToString().Split("_").Last();
+                                await _redisDb.KeyRenameAsync(keyToDelete, newKey);
+                            }
+                        }
+                        else
+                        {
+                            var key = foundKeys.First();
+                            await _redisDb.StringSetAsync(key, group.DisplayName);
 
+                            // members
+
+                        }
+                    }
+                    else
+                    {
+                        if (group.AdditionalData == null || !group.AdditionalData.ContainsKey("@removed")) {
+                            await _redisDb.StringSetAsync($"_{group.Id}", group.DisplayName);
+                        }
+                    }
                 }
 
 
