@@ -118,57 +118,56 @@ namespace MarsOffice.Qeeps.Access
                         {
                             var key = foundKeys.First();
                             await _redisDb.StringSetAsync(key, group.DisplayName);
+                        }
+                    }
+                    else
+                    {
+                        await _redisDb.StringSetAsync($"_{group.Id}", group.DisplayName);
+                    }
+                }
 
-                            // members
-                            if (group.AdditionalData != null && group.AdditionalData.ContainsKey("members@delta"))
+
+                foreach (var group in response.CurrentPage)
+                {
+
+                    // members
+                    if (group.AdditionalData != null && group.AdditionalData.ContainsKey("members@delta"))
+                    {
+                        var memberChanges = group.AdditionalData["members@delta"] as JArray;
+                        foreach (JObject jObj in memberChanges)
+                        {
+                            if (jObj.GetValue("@odata.type").ToString() != "#microsoft.graph.group")
                             {
-                                var memberChanges = group.AdditionalData["members@delta"] as JArray;
-                                foreach (JObject jObj in memberChanges)
+                                continue;
+                            }
+                            var id = jObj.GetValue("id").ToString();
+                            if (jObj.ContainsKey("@removed"))
+                            {
+                                var foundKeysWithParent = _server.Keys(_config.GetValue<int>("redisdatabase"), $"*_{id}*");
+                                foreach (var k in foundKeysWithParent)
                                 {
-                                    if (jObj.GetValue("@odata.type").ToString() != "#microsoft.graph.group")
+                                    var strK = k.ToString();
+                                    var parentsRemoved = strK[strK.IndexOf($"_{id}")..];
+                                    await _redisDb.KeyRenameAsync(k, parentsRemoved);
+                                }
+                            }
+                            else
+                            {
+                                var foundKeyWithParent = _server.Keys(_config.GetValue<int>("redisdatabase"), $"*_{id}");
+                                if (foundKeyWithParent.Any())
+                                {
+                                    var singleKey = foundKeyWithParent.First();
+                                    var foundParentKeys = _server.Keys(_config.GetValue<int>("redisdatabase"), $"*_{group.Id}");
+                                    if (foundParentKeys.Any())
                                     {
-                                        continue;
-                                    }
-                                    var id = jObj.GetValue("id").ToString();
-                                    if (jObj.ContainsKey("@removed"))
-                                    {
-                                        var foundKeysWithParent = _server.Keys(_config.GetValue<int>("redisdatabase"), $"*_{id}*");
-                                        foreach (var k in foundKeysWithParent)
-                                        {
-                                            var strK = k.ToString();
-                                            var parentsRemoved = strK[strK.IndexOf($"_{id}")..];
-                                            await _redisDb.KeyRenameAsync(k, parentsRemoved);
-                                        }
-                                    }
-                                    else
-                                    {
-                                        var foundKeyWithParent = _server.Keys(_config.GetValue<int>("redisdatabase"), $"*_{id}");
-                                        if (foundKeyWithParent.Any())
-                                        {
-                                            var singleKey = foundKeyWithParent.First();
-                                            var foundParentKeys = _server.Keys(_config.GetValue<int>("redisdatabase"), $"*_{group.Id}");
-                                            if (foundParentKeys.Any())
-                                            {
-                                                var parentKey = foundParentKeys.First();
-                                                await _redisDb.KeyRenameAsync(singleKey, $"{parentKey}_{id}");
-                                            }
-                                        }
+                                        var parentKey = foundParentKeys.First();
+                                        await _redisDb.KeyRenameAsync(singleKey, $"{parentKey}_{id}");
                                     }
                                 }
                             }
                         }
                     }
-                    else
-                    {
-                        if (group.AdditionalData == null || !group.AdditionalData.ContainsKey("@removed"))
-                        {
-                            await _redisDb.StringSetAsync($"_{group.Id}", group.DisplayName);
-                        }
-                    }
                 }
-
-
-
                 lastDeltaRequest = response.NextPageRequest;
             }
             var obj = new DeltaFile
