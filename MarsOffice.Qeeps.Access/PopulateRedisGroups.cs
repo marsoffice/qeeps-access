@@ -8,6 +8,7 @@ using Microsoft.Azure.WebJobs;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Microsoft.Graph;
+using Newtonsoft.Json.Linq;
 using StackExchange.Redis;
 
 namespace MarsOffice.Qeeps.Access
@@ -34,7 +35,7 @@ namespace MarsOffice.Qeeps.Access
         }
 
         [FunctionName("PopulateRedisGroups")]
-        public async Task Run([TimerTrigger("0 */15 * * * *", RunOnStartup = true)] TimerInfo myTimer,
+        public async Task Run([TimerTrigger("0 */15 * * * *", RunOnStartup = false)] TimerInfo myTimer,
         [Blob("graph-api/delta.json", FileAccess.Read)] Stream deltaFile,
         [Blob("graph-api/delta.json", FileAccess.Write)] Stream deltaFileWrite,
         ILogger log)
@@ -50,7 +51,6 @@ namespace MarsOffice.Qeeps.Access
 
             if (isRedisEmpty)
             {
-                await _server.FlushDatabaseAsync(_config.GetValue<int>("redisdatabase"));
                 await PopulateGroupsRecursively(_config["adgroupid"]);
                 await PopulateGroupsDelta(deltaFileWrite, lastDelta);
                 await _redisDb.StringSetAsync($"dummy", "dummy");
@@ -99,7 +99,7 @@ namespace MarsOffice.Qeeps.Access
                 {
                     nextDelta = response.AdditionalData["@odata.deltaLink"] as string;
                 }
-                foreach (var group in response.CurrentPage)
+                foreach (var group in response.CurrentPage.OrderBy(x => x.AdditionalData).ToList())
                 {
                     var foundKeys = _server.Keys(_config.GetValue<int>("redisdatabase"), $"*_{group.Id}");
                     if (foundKeys.Any())
@@ -108,9 +108,10 @@ namespace MarsOffice.Qeeps.Access
                         {
                             await _redisDb.KeyDeleteAsync(foundKeys.ToArray());
                             var allKeysToDelete = _server.Keys(_config.GetValue<int>("redisdatabase"), $"*_{group.Id}_*");
-                            foreach (var keyToDelete in allKeysToDelete) {
+                            foreach (var keyToDelete in allKeysToDelete)
+                            {
                                 var newKey = keyToDelete.ToString().Split("_").Last();
-                                await _redisDb.KeyRenameAsync(keyToDelete, newKey);
+                                await _redisDb.KeyRenameAsync(keyToDelete, "_" + newKey);
                             }
                         }
                         else
@@ -119,12 +120,39 @@ namespace MarsOffice.Qeeps.Access
                             await _redisDb.StringSetAsync(key, group.DisplayName);
 
                             // members
-
+                            if (group.AdditionalData != null && group.AdditionalData.ContainsKey("members@delta"))
+                            {
+                                var memberChanges = group.AdditionalData["members@delta"] as JArray;
+                                foreach (JObject jObj in memberChanges)
+                                {
+                                    var id = jObj.GetValue("id").ToString();
+                                    if (jObj.ContainsKey("@removed"))
+                                    {
+                                        var foundKeysWithParent = _server.Keys(_config.GetValue<int>("redisdatabase"), $"*_{id}*");
+                                        foreach (var k in foundKeysWithParent) {
+                                            var strK = k.ToString();
+                                            var parentsRemoved = strK[strK.IndexOf($"_{id}")..];
+                                            await _redisDb.KeyRenameAsync(k, parentsRemoved);
+                                        }
+                                    } else {
+                                        var foundKeyWithParent = _server.Keys(_config.GetValue<int>("redisdatabase"), $"*_{id}");
+                                        if (foundKeyWithParent.Any()) {
+                                            var singleKey = foundKeyWithParent.First();
+                                            var foundParentKeys = _server.Keys(_config.GetValue<int>("redisdatabase"), $"*_{group.Id}");
+                                            if (foundParentKeys.Any()) {
+                                                var parentKey = foundParentKeys.First();
+                                                await _redisDb.KeyRenameAsync(singleKey, $"{parentKey}_{id}");
+                                            }
+                                        }
+                                    }
+                                }
+                            }
                         }
                     }
                     else
                     {
-                        if (group.AdditionalData == null || !group.AdditionalData.ContainsKey("@removed")) {
+                        if (group.AdditionalData == null || !group.AdditionalData.ContainsKey("@removed"))
+                        {
                             await _redisDb.StringSetAsync($"_{group.Id}", group.DisplayName);
                         }
                     }
