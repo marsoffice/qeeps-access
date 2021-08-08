@@ -125,21 +125,30 @@ namespace MarsOffice.Qeeps.Access
                                 var memberChanges = group.AdditionalData["members@delta"] as JArray;
                                 foreach (JObject jObj in memberChanges)
                                 {
+                                    if (jObj.GetValue("@odata.type").ToString() != "#microsoft.graph.group")
+                                    {
+                                        continue;
+                                    }
                                     var id = jObj.GetValue("id").ToString();
                                     if (jObj.ContainsKey("@removed"))
                                     {
                                         var foundKeysWithParent = _server.Keys(_config.GetValue<int>("redisdatabase"), $"*_{id}*");
-                                        foreach (var k in foundKeysWithParent) {
+                                        foreach (var k in foundKeysWithParent)
+                                        {
                                             var strK = k.ToString();
                                             var parentsRemoved = strK[strK.IndexOf($"_{id}")..];
                                             await _redisDb.KeyRenameAsync(k, parentsRemoved);
                                         }
-                                    } else {
+                                    }
+                                    else
+                                    {
                                         var foundKeyWithParent = _server.Keys(_config.GetValue<int>("redisdatabase"), $"*_{id}");
-                                        if (foundKeyWithParent.Any()) {
+                                        if (foundKeyWithParent.Any())
+                                        {
                                             var singleKey = foundKeyWithParent.First();
                                             var foundParentKeys = _server.Keys(_config.GetValue<int>("redisdatabase"), $"*_{group.Id}");
-                                            if (foundParentKeys.Any()) {
+                                            if (foundParentKeys.Any())
+                                            {
                                                 var parentKey = foundParentKeys.First();
                                                 await _redisDb.KeyRenameAsync(singleKey, $"{parentKey}_{id}");
                                             }
