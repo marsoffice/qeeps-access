@@ -18,10 +18,10 @@ namespace MarsOffice.Qeeps.Access
         public override void ConfigureAppConfiguration(IFunctionsConfigurationBuilder builder)
         {
             FunctionsHostBuilderContext context = builder.GetContext();
-
+            var env = Environment.GetEnvironmentVariable("AZURE_FUNCTIONS_ENVIRONMENT") ?? "Development";
             builder.ConfigurationBuilder
                 .AddJsonFile(Path.Combine(context.ApplicationRootPath, "appsettings.json"), optional: true, reloadOnChange: false)
-                .AddJsonFile(Path.Combine(context.ApplicationRootPath, $"appsettings.{context.EnvironmentName}.json"), optional: true, reloadOnChange: false)
+                .AddJsonFile(Path.Combine(context.ApplicationRootPath, $"appsettings.{env}.json"), optional: true, reloadOnChange: false)
                 .AddEnvironmentVariables();
         }
 
