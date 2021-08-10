@@ -53,28 +53,36 @@ namespace MarsOffice.Qeeps.Access
                 ids[key] = strValue;
             }
 
-            var rootGroup = new OrganisationDto {
-                Id = _config["adgroupid"],
-                Name = ids[$"_{_config["adgroupid"]}"]
-            };
+            OrganisationDto rootGroup = null;
+            
+            if (ids.Any())
+            {
+                rootGroup = new OrganisationDto
+                {
+                    Id = _config["adgroupid"],
+                    Name = ids[$"_{_config["adgroupid"]}"]
+                };
 
-            ids = ids.Where(x => x.Key != $"_{_config["adgroupid"]}").ToDictionary(x => x.Key, x => x.Value);
-            PopulateChildren(rootGroup, ids);
-
+                ids = ids.Where(x => x.Key != $"_{_config["adgroupid"]}").ToDictionary(x => x.Key, x => x.Value);
+                PopulateChildren(rootGroup, ids);
+            }
             return new OkObjectResult(rootGroup);
         }
 
         private void PopulateChildren(OrganisationDto rootGroup, Dictionary<string, string> ids)
         {
             var foundChildrenDict = ids.Where(x => x.Key.StartsWith($"_{rootGroup.Id}")).ToDictionary(x => x.Key.Replace($"_{rootGroup.Id}", ""), x => x.Value);
-            if (!foundChildrenDict.Any()) {
+            if (!foundChildrenDict.Any())
+            {
                 return;
             }
-            rootGroup.Children = foundChildrenDict.Where(x => x.Key.Count(x => x == '_') == 1).Select(x => new OrganisationDto {
+            rootGroup.Children = foundChildrenDict.Where(x => x.Key.Count(x => x == '_') == 1).Select(x => new OrganisationDto
+            {
                 Id = x.Key.Substring(1),
                 Name = x.Value
             }).ToList();
-            foreach (var kid in rootGroup.Children) {
+            foreach (var kid in rootGroup.Children)
+            {
                 PopulateChildren(kid, foundChildrenDict);
             }
         }
