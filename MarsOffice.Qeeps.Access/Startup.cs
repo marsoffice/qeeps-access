@@ -30,7 +30,6 @@ namespace MarsOffice.Qeeps.Access
             builder.Services.AddTransient(_ =>
             {
                 TokenCredential tokenCredential = null;
-                var hostBuilderContext = builder.GetContext();
                 var envVar = Environment.GetEnvironmentVariable("AZURE_FUNCTIONS_ENVIRONMENT");
                 var isDevelopmentEnvironment = string.IsNullOrEmpty(envVar) || envVar.ToLower() == "development";
 
