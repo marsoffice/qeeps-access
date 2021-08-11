@@ -15,7 +15,7 @@ namespace MarsOffice.Qeeps.Access
 
         [FunctionName("Test")]
         public async Task<IActionResult> Run(
-            [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "test")] HttpRequest req)
+            [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "api/access/test")] HttpRequest req)
         {
             
             return new OkObjectResult(new OrganisationDto {
