@@ -8,7 +8,6 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.Azure.WebJobs;
 using Microsoft.Azure.WebJobs.Extensions.Http;
 using Microsoft.Extensions.Configuration;
-using Microsoft.Graph;
 using StackExchange.Redis;
 
 namespace MarsOffice.Qeeps.Access
@@ -30,10 +29,6 @@ namespace MarsOffice.Qeeps.Access
             [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "api/access/myOrganisationsTree")] HttpRequest req)
         {
             var principal = QeepsPrincipal.Parse(req);
-            if (!principal.Identity.IsAuthenticated)
-            {
-                return new UnauthorizedResult();
-            }
             var groupIds = principal.FindAll(x => x.Type == "groups").Select(x => x.Value).Distinct().ToList();
             var ids = new Dictionary<string, string>();
             foreach (var id in groupIds)
@@ -78,7 +73,7 @@ namespace MarsOffice.Qeeps.Access
             }
             rootGroup.Children = foundChildrenDict.Where(x => x.Key.Count(x => x == '_') == 1).Select(x => new OrganisationDto
             {
-                Id = x.Key.Substring(1),
+                Id = x.Key[1..],
                 Name = x.Value
             }).ToList();
             foreach (var kid in rootGroup.Children)
