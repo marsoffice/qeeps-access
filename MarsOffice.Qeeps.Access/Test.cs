@@ -22,11 +22,7 @@ namespace MarsOffice.Qeeps.Access
             [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "api/access/test")] HttpRequest req,
             ClaimsPrincipal principal)
         {
-            if (!principal.HasClaim(x => x.Type == "id"))
-            {
-                principal = QeepsPrincipal.Parse(req);
-            }
-            // var env = Environment.GetEnvironmentVariable("AZURE_FUNCTIONS_ENVIRONMENT") ?? "Development";
+            var env = Environment.GetEnvironmentVariable("AZURE_FUNCTIONS_ENVIRONMENT") ?? "Development";
             // if (env != "Development" && principal.FindFirstValue(ClaimTypes.Role) != "Application")
             // {
             //     return new StatusCodeResult(401);
