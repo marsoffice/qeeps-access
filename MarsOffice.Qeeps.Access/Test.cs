@@ -26,11 +26,11 @@ namespace MarsOffice.Qeeps.Access
             {
                 principal = QeepsPrincipal.Parse(req);
             }
-            var env = Environment.GetEnvironmentVariable("AZURE_FUNCTIONS_ENVIRONMENT") ?? "Development";
-            if (env != "Development" && principal.FindFirstValue(ClaimTypes.Role) != "Application")
-            {
-                return new StatusCodeResult(401);
-            }
+            // var env = Environment.GetEnvironmentVariable("AZURE_FUNCTIONS_ENVIRONMENT") ?? "Development";
+            // if (env != "Development" && principal.FindFirstValue(ClaimTypes.Role) != "Application")
+            // {
+            //     return new StatusCodeResult(401);
+            // }
             await Task.CompletedTask;
             return new OkObjectResult(new OrganisationDto
             {
