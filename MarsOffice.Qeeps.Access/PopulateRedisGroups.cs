@@ -5,7 +5,6 @@ using System.Threading.Tasks;
 using MarsOffice.Qeeps.Access.Entities;
 using Microsoft.Azure.WebJobs;
 using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.Logging;
 using Microsoft.Graph;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
@@ -31,10 +30,9 @@ namespace MarsOffice.Qeeps.Access
         }
 
         [FunctionName("PopulateRedisGroups")]
-        public async Task Run([TimerTrigger("0 */15 * * * *", RunOnStartup=true)] TimerInfo myTimer,
+        public async Task Run([TimerTrigger("0 */15 * * * *", RunOnStartup=true)] TimerInfo _,
         [Blob("graph-api/delta_groups.json", FileAccess.Read)] Stream deltaFile,
-        [Blob("graph-api/delta_groups.json", FileAccess.Write)] Stream deltaFileWrite,
-        ILogger log)
+        [Blob("graph-api/delta_groups.json", FileAccess.Write)] Stream deltaFileWrite)
         {
             var lastDelta = "latest";
             var isRedisEmpty = !await _redisDb.KeyExistsAsync("dummy");

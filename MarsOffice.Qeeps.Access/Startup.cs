@@ -61,7 +61,8 @@ namespace MarsOffice.Qeeps.Access
 
             builder.Services.AddSingleton(_ =>
             {
-                var mux = new Lazy<IConnectionMultiplexer>(() => ConnectionMultiplexer.Connect(builder.GetContext().Configuration["redisconnectionstring"]));
+                var mux = new Lazy<IConnectionMultiplexer>(() => 
+                    ConnectionMultiplexer.Connect(builder.GetContext().Configuration["redisconnectionstring"]));
                 return mux;
             });
         }

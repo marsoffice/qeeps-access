@@ -1,16 +1,13 @@
 using System;
 using System.IO;
 using System.Linq;
-using System.Text.Json;
 using System.Threading.Tasks;
 using MarsOffice.Qeeps.Access.Abstractions;
 using MarsOffice.Qeeps.Access.Entities;
 using Microsoft.Azure.WebJobs;
 using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.Logging;
 using Microsoft.Graph;
 using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
 using Newtonsoft.Json.Serialization;
 using StackExchange.Redis;
 
@@ -19,14 +16,12 @@ namespace MarsOffice.Qeeps.Access
     public class PopulateRedisUsers
     {
         private readonly GraphServiceClient _graphClient;
-        private readonly IConnectionMultiplexer _mux;
         private readonly IDatabase _redisDb;
         private readonly IServer _server;
         private readonly IConfiguration _config;
         public PopulateRedisUsers(GraphServiceClient graphClient, Lazy<IConnectionMultiplexer> mux, IConfiguration config)
         {
             _graphClient = graphClient;
-            _mux = mux.Value;
             _redisDb = mux.Value.GetDatabase(config.GetValue<int>("redisdatabase_users"));
             _server = mux.Value.GetServer(mux.Value.GetEndPoints()[0]);
             _config = config;
@@ -34,10 +29,9 @@ namespace MarsOffice.Qeeps.Access
 
         [FunctionName("PopulateRedisUsers")]
         public async Task Run([TimerTrigger("0 */15 * * * *",RunOnStartup = true
-        )] TimerInfo myTimer,
+        )] TimerInfo _,
         [Blob("graph-api/delta_users.json", FileAccess.Read)] Stream deltaFile,
-        [Blob("graph-api/delta_users.json", FileAccess.Write)] Stream deltaFileWrite,
-        ILogger log)
+        [Blob("graph-api/delta_users.json", FileAccess.Write)] Stream deltaFileWrite)
         {
             var lastDelta = "latest";
             var isRedisEmpty = !await _redisDb.KeyExistsAsync("dummy");
