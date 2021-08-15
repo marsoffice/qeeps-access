@@ -28,14 +28,12 @@ namespace MarsOffice.Qeeps.Access
 
         [FunctionName("MyOrganisationsTree")]
         public async Task<IActionResult> Run(
-            [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "api/access/myOrganisationsTree")] HttpRequest req,
-            ClaimsPrincipal principal
+            [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "api/access/myOrganisationsTree")] HttpRequest req
             )
         {
-            if (!principal.HasClaim(x => x.Type == "id"))
-            {
-                principal = QeepsPrincipal.Parse(req);
-            }
+
+            var principal = QeepsPrincipal.Parse(req);
+
             var groupIds = principal.FindAll(x => x.Type == "groups").Select(x => x.Value).Distinct().ToList();
             var ids = new Dictionary<string, string>();
             foreach (var id in groupIds)
@@ -56,7 +54,7 @@ namespace MarsOffice.Qeeps.Access
             }
 
             OrganisationDto rootGroup = null;
-            
+
             if (ids.Any())
             {
                 rootGroup = new OrganisationDto

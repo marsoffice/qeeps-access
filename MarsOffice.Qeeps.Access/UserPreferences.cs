@@ -34,14 +34,10 @@ namespace MarsOffice.Qeeps.Access
                 CreateIfNotExists = true,
                 PartitionKey = "UserId",
                 #endif
-                ConnectionStringSetting = "cdbconnectionstring")] DocumentClient client,
-                ClaimsPrincipal principal
+                ConnectionStringSetting = "cdbconnectionstring")] DocumentClient client
             )
         {
-            if (!principal.HasClaim(x => x.Type == "id"))
-            {
-                principal = QeepsPrincipal.Parse(req);
-            }
+            var principal = QeepsPrincipal.Parse(req);
             var userId = principal.FindFirst("id").Value;
             var collectionUri = UriFactory.CreateDocumentUri("access", "UserPreferences", userId);
             var foundSettingsResponse = await client.ReadDocumentAsync<UserPreferencesEntity>(collectionUri, new RequestOptions
@@ -68,14 +64,10 @@ namespace MarsOffice.Qeeps.Access
                 CreateIfNotExists = true,
                 PartitionKey = "/UserId",
                 #endif
-                ConnectionStringSetting = "cdbconnectionstring")] IAsyncCollector<UserPreferencesEntity> userPreferencesOut,
-                ClaimsPrincipal principal
+                ConnectionStringSetting = "cdbconnectionstring")] IAsyncCollector<UserPreferencesEntity> userPreferencesOut
             )
         {
-            if (!principal.HasClaim(x => x.Type == "id"))
-            {
-                principal = QeepsPrincipal.Parse(req);
-            }
+            var principal = QeepsPrincipal.Parse(req);
             var userId = principal.FindFirst("id").Value;
             var json = string.Empty;
             using (var streamReader = new StreamReader(req.Body))
