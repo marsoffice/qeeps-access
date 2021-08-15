@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Security.Claims;
 using System.Threading.Tasks;
 using MarsOffice.Qeeps.Access.Abstractions;
 using MarsOffice.Qeeps.Microfunction;
@@ -27,9 +28,14 @@ namespace MarsOffice.Qeeps.Access
 
         [FunctionName("MyOrganisationsTree")]
         public async Task<IActionResult> Run(
-            [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "api/access/myOrganisationsTree")] HttpRequest req)
+            [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "api/access/myOrganisationsTree")] HttpRequest req,
+            ClaimsPrincipal principal
+            )
         {
-            var principal = QeepsPrincipal.Parse(req);
+            if (principal == null)
+            {
+                principal = QeepsPrincipal.Parse(req);
+            }
             var groupIds = principal.FindAll(x => x.Type == "groups").Select(x => x.Value).Distinct().ToList();
             var ids = new Dictionary<string, string>();
             foreach (var id in groupIds)

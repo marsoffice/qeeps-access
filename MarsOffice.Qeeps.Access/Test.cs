@@ -1,3 +1,5 @@
+using System.Linq;
+using System.Security.Claims;
 using System.Threading.Tasks;
 using MarsOffice.Qeeps.Access.Abstractions;
 using Microsoft.AspNetCore.Http;
@@ -15,12 +17,13 @@ namespace MarsOffice.Qeeps.Access
 
         [FunctionName("Test")]
         public async Task<IActionResult> Run(
-            [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "api/access/test")] HttpRequest req)
+            [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "api/access/test")] HttpRequest req,
+            ClaimsPrincipal principal)
         {
             await Task.CompletedTask;
             return new OkObjectResult(new OrganisationDto {
                 Id = "1",
-                Name = "test"
+                Name = $"test {string.Join("|", principal?.Claims.Select(x => x.Type + "=" + x.Value).ToList())}"
             });
         }
     }

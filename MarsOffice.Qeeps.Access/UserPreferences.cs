@@ -1,4 +1,5 @@
 using System.IO;
+using System.Security.Claims;
 using System.Threading.Tasks;
 using AutoMapper;
 using MarsOffice.Qeeps.Access.Abstractions;
@@ -33,19 +34,26 @@ namespace MarsOffice.Qeeps.Access
                 CreateIfNotExists = true,
                 PartitionKey = "UserId",
                 #endif
-                ConnectionStringSetting = "cdbconnectionstring")] DocumentClient client
+                ConnectionStringSetting = "cdbconnectionstring")] DocumentClient client,
+                ClaimsPrincipal principal
             )
         {
-            var userId = QeepsPrincipal.Parse(req).FindFirst("id").Value;
+            if (principal == null)
+            {
+                principal = QeepsPrincipal.Parse(req);
+            }
+            var userId = principal.FindFirst("id").Value;
             var collectionUri = UriFactory.CreateDocumentUri("access", "UserPreferences", userId);
-            var foundSettingsResponse = await client.ReadDocumentAsync<UserPreferencesEntity>(collectionUri, new RequestOptions {
+            var foundSettingsResponse = await client.ReadDocumentAsync<UserPreferencesEntity>(collectionUri, new RequestOptions
+            {
                 PartitionKey = new PartitionKey(userId)
             });
             if (foundSettingsResponse.Document == null)
             {
                 return new JsonResult(null);
             }
-            return new JsonResult(_mapper.Map<UserPreferencesDto>(foundSettingsResponse.Document), new JsonSerializerSettings {
+            return new JsonResult(_mapper.Map<UserPreferencesDto>(foundSettingsResponse.Document), new JsonSerializerSettings
+            {
                 ContractResolver = new CamelCasePropertyNamesContractResolver()
             });
         }
@@ -60,15 +68,22 @@ namespace MarsOffice.Qeeps.Access
                 CreateIfNotExists = true,
                 PartitionKey = "/UserId",
                 #endif
-                ConnectionStringSetting = "cdbconnectionstring")] IAsyncCollector<UserPreferencesEntity> userPreferencesOut
+                ConnectionStringSetting = "cdbconnectionstring")] IAsyncCollector<UserPreferencesEntity> userPreferencesOut,
+                ClaimsPrincipal principal
             )
         {
-            var userId = QeepsPrincipal.Parse(req).FindFirst("id").Value;
+            if (principal == null)
+            {
+                principal = QeepsPrincipal.Parse(req);
+            }
+            var userId = principal.FindFirst("id").Value;
             var json = string.Empty;
-            using (var streamReader = new StreamReader(req.Body)) {
+            using (var streamReader = new StreamReader(req.Body))
+            {
                 json = await streamReader.ReadToEndAsync();
             }
-            var payload = JsonConvert.DeserializeObject<UserPreferencesDto>(json, new JsonSerializerSettings {
+            var payload = JsonConvert.DeserializeObject<UserPreferencesDto>(json, new JsonSerializerSettings
+            {
                 ContractResolver = new CamelCasePropertyNamesContractResolver()
             });
             var entity = _mapper.Map<UserPreferencesEntity>(payload);
