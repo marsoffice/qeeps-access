@@ -54,7 +54,7 @@ namespace MarsOffice.Qeeps.Access
                 collectionName: "UserPreferences",
                 #if DEBUG
                 CreateIfNotExists = true,
-                PartitionKey = "UserId",
+                PartitionKey = "/UserId",
                 #endif
                 ConnectionStringSetting = "cdbconnectionstring")] IAsyncCollector<UserPreferencesEntity> userPreferencesOut
             )
