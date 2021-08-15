@@ -21,16 +21,16 @@ namespace MarsOffice.Qeeps.Access
     public class PopulateRedisGroups
     {
         private readonly GraphServiceClient _graphClient;
-        private readonly ConnectionMultiplexer _mux;
+        private readonly IConnectionMultiplexer _mux;
         private readonly IDatabase _redisDb;
         private readonly IServer _server;
         private readonly IConfiguration _config;
-        public PopulateRedisGroups(GraphServiceClient graphClient, ConnectionMultiplexer mux, IConfiguration config)
+        public PopulateRedisGroups(GraphServiceClient graphClient, Lazy<IConnectionMultiplexer> mux, IConfiguration config)
         {
             _graphClient = graphClient;
-            _mux = mux;
-            _redisDb = mux.GetDatabase(config.GetValue<int>("redisdatabase"));
-            _server = mux.GetServer(mux.GetEndPoints()[0]);
+            _mux = mux.Value;
+            _redisDb = mux.Value.GetDatabase(config.GetValue<int>("redisdatabase"));
+            _server = mux.Value.GetServer(mux.Value.GetEndPoints()[0]);
             _config = config;
         }
 

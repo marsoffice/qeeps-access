@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -17,10 +18,10 @@ namespace MarsOffice.Qeeps.Access
         private readonly IServer _server;
         private readonly IDatabase _database;
         private readonly IConfiguration _config;
-        public MyOrganisationsTree(ConnectionMultiplexer mux, IConfiguration config)
+        public MyOrganisationsTree(Lazy<IConnectionMultiplexer> mux, IConfiguration config)
         {
-            _server = mux.GetServer(mux.GetEndPoints()[0]);
-            _database = mux.GetDatabase(config.GetValue<int>("redisdatabase"));
+            _server = mux.Value.GetServer(mux.Value.GetEndPoints()[0]);
+            _database = mux.Value.GetDatabase(config.GetValue<int>("redisdatabase"));
             _config = config;
         }
 

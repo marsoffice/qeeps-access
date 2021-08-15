@@ -10,7 +10,6 @@
     <ProjectReference Include="../MarsOffice.Qeeps.Access.Abstractions/MarsOffice.Qeeps.Access.Abstractions.csproj" />
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="Azure.Identity" Version="1.4.1" />
     <PackageReference Include="MarsOffice.Qeeps.Microfunction" Version="1.1.1-dev.3" />
     <PackageReference Include="Microsoft.Azure.Functions.Extensions" Version="1.1.0" />
     <PackageReference Include="Microsoft.Azure.WebJobs.Extensions.Storage" Version="4.0.4" />
