@@ -27,6 +27,8 @@ namespace MarsOffice.Qeeps.Access
 
         public override void Configure(IFunctionsHostBuilder builder)
         {
+            builder.Services.AddAutoMapper(typeof(Startup).Assembly);
+
             builder.Services.AddTransient(_ =>
             {
                 TokenCredential tokenCredential = null;
