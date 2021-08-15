@@ -23,10 +23,10 @@ namespace MarsOffice.Qeeps.Access
             ClaimsPrincipal principal)
         {
             var env = Environment.GetEnvironmentVariable("AZURE_FUNCTIONS_ENVIRONMENT") ?? "Development";
-            // if (env != "Development" && principal.FindFirstValue(ClaimTypes.Role) != "Application")
-            // {
-            //     return new StatusCodeResult(401);
-            // }
+            if (env != "Development" && principal.FindFirstValue("roles") != "Application")
+            {
+                return new StatusCodeResult(401);
+            }
             await Task.CompletedTask;
             return new OkObjectResult(new OrganisationDto
             {
