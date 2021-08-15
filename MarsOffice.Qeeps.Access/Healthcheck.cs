@@ -16,7 +16,7 @@ namespace MarsOffice.Qeeps.Access
         public Healthcheck(ConnectionMultiplexer mux, IConfiguration config)
         {
             _mux = mux;
-            _redisDb = mux.GetDatabase(config.GetValue<int>("redisdatabase"));
+            _redisDb = mux.GetDatabase(config.GetValue<int>("redisdatabase_groups"));
         }
 
         [FunctionName("Healthcheck")]

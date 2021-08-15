@@ -22,7 +22,7 @@ namespace MarsOffice.Qeeps.Access
         public MyOrganisationsTree(Lazy<IConnectionMultiplexer> mux, IConfiguration config)
         {
             _server = mux.Value.GetServer(mux.Value.GetEndPoints()[0]);
-            _database = mux.Value.GetDatabase(config.GetValue<int>("redisdatabase"));
+            _database = mux.Value.GetDatabase(config.GetValue<int>("redisdatabase_groups"));
             _config = config;
         }
 
@@ -38,7 +38,7 @@ namespace MarsOffice.Qeeps.Access
             var ids = new Dictionary<string, string>();
             foreach (var id in groupIds)
             {
-                var foundKeys = _server.Keys(_config.GetValue<int>("redisdatabase"), $"*_{id}").ToList();
+                var foundKeys = _server.Keys(_config.GetValue<int>("redisdatabase_groups"), $"*_{id}").ToList();
                 if (!foundKeys.Any())
                 {
                     continue;

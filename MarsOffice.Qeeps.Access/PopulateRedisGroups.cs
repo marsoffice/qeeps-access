@@ -1,23 +1,19 @@
 using System;
-using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Text.Json;
 using System.Threading.Tasks;
+using MarsOffice.Qeeps.Access.Entities;
 using Microsoft.Azure.WebJobs;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Microsoft.Graph;
+using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using Newtonsoft.Json.Serialization;
 using StackExchange.Redis;
 
 namespace MarsOffice.Qeeps.Access
 {
-    class DeltaFile
-    {
-        public string Delta { get; set; }
-    }
-
     public class PopulateRedisGroups
     {
         private readonly GraphServiceClient _graphClient;
@@ -29,15 +25,19 @@ namespace MarsOffice.Qeeps.Access
         {
             _graphClient = graphClient;
             _mux = mux.Value;
-            _redisDb = mux.Value.GetDatabase(config.GetValue<int>("redisdatabase"));
+            _redisDb = mux.Value.GetDatabase(config.GetValue<int>("redisdatabase_groups"));
             _server = mux.Value.GetServer(mux.Value.GetEndPoints()[0]);
             _config = config;
         }
 
         [FunctionName("PopulateRedisGroups")]
-        public async Task Run([TimerTrigger("0 */15 * * * *", RunOnStartup = true)] TimerInfo myTimer,
-        [Blob("graph-api/delta.json", FileAccess.Read)] Stream deltaFile,
-        [Blob("graph-api/delta.json", FileAccess.Write)] Stream deltaFileWrite,
+        public async Task Run([TimerTrigger("0 */15 * * * *"
+        #if !DEBUG
+        ,RunOnStartup = true
+        #endif
+        )] TimerInfo myTimer,
+        [Blob("graph-api/delta_groups.json", FileAccess.Read)] Stream deltaFile,
+        [Blob("graph-api/delta_groups.json", FileAccess.Write)] Stream deltaFileWrite,
         ILogger log)
         {
             var lastDelta = "latest";
@@ -45,7 +45,12 @@ namespace MarsOffice.Qeeps.Access
 
             if (!isRedisEmpty && deltaFile != null && deltaFile.CanRead)
             {
-                var deserialized = await JsonSerializer.DeserializeAsync<DeltaFile>(deltaFile);
+                using var streamReader = new StreamReader(deltaFile);
+                var json = await streamReader.ReadToEndAsync();
+                var deserialized = JsonConvert.DeserializeObject<DeltaFile>(json, new JsonSerializerSettings
+                {
+                    ContractResolver = new CamelCasePropertyNamesContractResolver()
+                });
                 lastDelta = deserialized.Delta;
             }
 
@@ -101,13 +106,13 @@ namespace MarsOffice.Qeeps.Access
                 }
                 foreach (var group in response.CurrentPage)
                 {
-                    var foundKeys = _server.Keys(_config.GetValue<int>("redisdatabase"), $"*_{group.Id}");
+                    var foundKeys = _server.Keys(_config.GetValue<int>("redisdatabase_groups"), $"*_{group.Id}");
                     if (foundKeys.Any())
                     {
                         if (group.AdditionalData != null && group.AdditionalData.ContainsKey("@removed"))
                         {
                             await _redisDb.KeyDeleteAsync(foundKeys.ToArray());
-                            var allKeysToDelete = _server.Keys(_config.GetValue<int>("redisdatabase"), $"*_{group.Id}_*");
+                            var allKeysToDelete = _server.Keys(_config.GetValue<int>("redisdatabase_groups"), $"*_{group.Id}_*");
                             foreach (var keyToDelete in allKeysToDelete)
                             {
                                 var newKey = keyToDelete.ToString().Split("_").Last();
@@ -143,7 +148,7 @@ namespace MarsOffice.Qeeps.Access
                             var id = jObj.GetValue("id").ToString();
                             if (jObj.ContainsKey("@removed"))
                             {
-                                var foundKeysWithParent = _server.Keys(_config.GetValue<int>("redisdatabase"), $"*_{id}*");
+                                var foundKeysWithParent = _server.Keys(_config.GetValue<int>("redisdatabase_groups"), $"*_{id}*");
                                 foreach (var k in foundKeysWithParent)
                                 {
                                     var strK = k.ToString();
@@ -153,11 +158,11 @@ namespace MarsOffice.Qeeps.Access
                             }
                             else
                             {
-                                var foundKeyWithParent = _server.Keys(_config.GetValue<int>("redisdatabase"), $"*_{id}");
+                                var foundKeyWithParent = _server.Keys(_config.GetValue<int>("redisdatabase_groups"), $"*_{id}");
                                 if (foundKeyWithParent.Any())
                                 {
                                     var singleKey = foundKeyWithParent.First();
-                                    var foundParentKeys = _server.Keys(_config.GetValue<int>("redisdatabase"), $"*_{group.Id}");
+                                    var foundParentKeys = _server.Keys(_config.GetValue<int>("redisdatabase_groups"), $"*_{group.Id}");
                                     if (foundParentKeys.Any())
                                     {
                                         var parentKey = foundParentKeys.First();
@@ -170,11 +175,17 @@ namespace MarsOffice.Qeeps.Access
                 }
                 lastDeltaRequest = response.NextPageRequest;
             }
+            
             var obj = new DeltaFile
             {
                 Delta = nextDelta.Split("?")[1].Replace("$deltatoken=", "")
             };
-            await JsonSerializer.SerializeAsync(stream, obj);
+            var deltaFileJson = JsonConvert.SerializeObject(obj, new JsonSerializerSettings
+            {
+                ContractResolver = new CamelCasePropertyNamesContractResolver()
+            });
+            using var streamWriter = new StreamWriter(stream);
+            await streamWriter.WriteAsync(deltaFileJson);
         }
     }
 }
