@@ -32,7 +32,7 @@ namespace MarsOffice.Qeeps.Access
             ClaimsPrincipal principal
             )
         {
-            if (principal == null)
+            if (!principal.HasClaim(x => x.Type == "id"))
             {
                 principal = QeepsPrincipal.Parse(req);
             }
