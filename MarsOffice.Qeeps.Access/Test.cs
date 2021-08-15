@@ -1,3 +1,4 @@
+using System;
 using System.Linq;
 using System.Security.Claims;
 using System.Threading.Tasks;
@@ -25,7 +26,8 @@ namespace MarsOffice.Qeeps.Access
             {
                 principal = QeepsPrincipal.Parse(req);
             }
-            if (principal.FindFirstValue(ClaimTypes.Role) != "Application")
+            var env = Environment.GetEnvironmentVariable("AZURE_FUNCTIONS_ENVIRONMENT") ?? "Development";
+            if (env != "Development" && principal.FindFirstValue(ClaimTypes.Role) != "Application")
             {
                 return new StatusCodeResult(401);
             }
