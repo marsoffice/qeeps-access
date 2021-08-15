@@ -1,4 +1,4 @@
-using System.Text.Json;
+using System.IO;
 using System.Threading.Tasks;
 using AutoMapper;
 using MarsOffice.Qeeps.Access.Abstractions;
@@ -10,6 +10,8 @@ using Microsoft.Azure.Documents;
 using Microsoft.Azure.Documents.Client;
 using Microsoft.Azure.WebJobs;
 using Microsoft.Azure.WebJobs.Extensions.Http;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Serialization;
 
 namespace MarsOffice.Qeeps.Access
 {
@@ -22,7 +24,7 @@ namespace MarsOffice.Qeeps.Access
         }
 
         [FunctionName("GetUserPreferences")]
-        public async Task<UserPreferencesDto> GetUserPreferences(
+        public async Task<IActionResult> GetUserPreferences(
             [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "api/access/userPreferences")] HttpRequest req,
             [CosmosDB(
                 databaseName: "access",
@@ -41,9 +43,11 @@ namespace MarsOffice.Qeeps.Access
             });
             if (foundSettingsResponse.Document == null)
             {
-                return null;
+                return new JsonResult(null);
             }
-            return _mapper.Map<UserPreferencesDto>(foundSettingsResponse.Document);
+            return new JsonResult(_mapper.Map<UserPreferencesDto>(foundSettingsResponse.Document), new JsonSerializerSettings {
+                ContractResolver = new CamelCasePropertyNamesContractResolver()
+            });
         }
 
         [FunctionName("SaveUserPreferences")]
@@ -60,7 +64,13 @@ namespace MarsOffice.Qeeps.Access
             )
         {
             var userId = QeepsPrincipal.Parse(req).FindFirst("id").Value;
-            var payload = await JsonSerializer.DeserializeAsync<UserPreferencesDto>(req.Body);
+            var json = string.Empty;
+            using (var streamReader = new StreamReader(req.Body)) {
+                json = await streamReader.ReadToEndAsync();
+            }
+            var payload = JsonConvert.DeserializeObject<UserPreferencesDto>(json, new JsonSerializerSettings {
+                ContractResolver = new CamelCasePropertyNamesContractResolver()
+            });
             var entity = _mapper.Map<UserPreferencesEntity>(payload);
             entity.UserId = userId;
             entity.Id = userId;
