@@ -25,8 +25,13 @@ namespace MarsOffice.Qeeps.Access
             {
                 principal = QeepsPrincipal.Parse(req);
             }
+            if (principal.FindFirstValue(ClaimTypes.Role) != "Application")
+            {
+                return new StatusCodeResult(401);
+            }
             await Task.CompletedTask;
-            return new OkObjectResult(new OrganisationDto {
+            return new OkObjectResult(new OrganisationDto
+            {
                 Id = "1",
                 Name = $"test {string.Join("|", principal?.Claims.Select(x => x.Type + "=" + x.Value).ToList())}"
             });
