@@ -3,6 +3,7 @@ using System.Linq;
 using System.Security.Claims;
 using System.Threading.Tasks;
 using MarsOffice.Qeeps.Access.Abstractions;
+using MarsOffice.Qeeps.Microfunction;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Azure.WebJobs;
@@ -18,9 +19,10 @@ namespace MarsOffice.Qeeps.Access
 
         [FunctionName("Test")]
         public async Task<IActionResult> Run(
-            [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "api/access/test")] HttpRequest _,
+            [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "api/access/test")] HttpRequest req,
             ClaimsPrincipal principal)
         {
+            var qp = QeepsPrincipal.Parse(req);
             var env = Environment.GetEnvironmentVariable("AZURE_FUNCTIONS_ENVIRONMENT") ?? "Development";
             if (env != "Development" && principal.FindFirstValue("roles") != "Application")
             {
@@ -30,7 +32,7 @@ namespace MarsOffice.Qeeps.Access
             return new OkObjectResult(new OrganisationDto
             {
                 Id = "1",
-                Name = $"test {string.Join("|", principal?.Claims.Select(x => x.Type + "=" + x.Value).ToList())}"
+                Name = $"{qp?.FindFirstValue("roles")} test {string.Join("|", principal?.Claims.Select(x => x.Type + "=" + x.Value).ToList())}"
             });
         }
     }
