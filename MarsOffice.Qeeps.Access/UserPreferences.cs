@@ -1,4 +1,8 @@
+using System;
+using System.Collections.Generic;
 using System.IO;
+using System.Linq;
+using System.Security.Claims;
 using System.Threading.Tasks;
 using AutoMapper;
 using MarsOffice.Qeeps.Access.Abstractions;
@@ -8,6 +12,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Azure.Documents;
 using Microsoft.Azure.Documents.Client;
+using Microsoft.Azure.Documents.Linq;
 using Microsoft.Azure.WebJobs;
 using Microsoft.Azure.WebJobs.Extensions.Http;
 using Newtonsoft.Json;
@@ -82,6 +87,53 @@ namespace MarsOffice.Qeeps.Access
             entity.Id = userId;
             await userPreferencesOut.AddAsync(entity);
             return new OkResult();
+        }
+
+
+        [FunctionName("GetPrefencesForUsers")]
+        public async Task<IActionResult> GetPrefencesForUsers(
+            [HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = "api/access/preferences")] HttpRequest req,
+            [CosmosDB(
+                databaseName: "access",
+                collectionName: "UserPreferences",
+                #if DEBUG
+                CreateIfNotExists = true,
+                PartitionKey = "UserId",
+                #endif
+                ConnectionStringSetting = "cdbconnectionstring")] DocumentClient client,
+                ClaimsPrincipal principal
+            )
+        {
+            var env = Environment.GetEnvironmentVariable("AZURE_FUNCTIONS_ENVIRONMENT") ?? "Development";
+            if (env != "Development" && principal.FindFirstValue("roles") != "Application")
+            {
+                return new StatusCodeResult(401);
+            }
+            var collectionUri = UriFactory.CreateDocumentCollectionUri("access", "UserPreferences");
+
+            using var streamReader = new StreamReader(req.Body);
+            var json = await streamReader.ReadToEndAsync();
+            var ids = JsonConvert.DeserializeObject<IEnumerable<string>>(json);
+
+            var preferences = new List<UserPreferencesDto>();
+
+            var response = client.CreateDocumentQuery<UserPreferencesEntity>(collectionUri)
+                .Where(x => ids.Contains(x.Id))
+                .AsDocumentQuery();
+
+            while (response.HasMoreResults)
+            {
+                var data = await response.ExecuteNextAsync<UserPreferencesEntity>();
+                if (data != null)
+                {
+                    preferences.AddRange(_mapper.Map<IEnumerable<UserPreferencesDto>>(data.ToList()));
+                }
+            }
+
+            return new JsonResult(_mapper.Map<IEnumerable<UserPreferencesDto>>(preferences), new JsonSerializerSettings
+            {
+                ContractResolver = new CamelCasePropertyNamesContractResolver()
+            });
         }
     }
 }
