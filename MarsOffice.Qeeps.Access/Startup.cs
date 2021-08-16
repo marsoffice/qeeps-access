@@ -9,6 +9,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Graph;
 using StackExchange.Redis;
+using FluentValidation;
 
 [assembly: FunctionsStartup(typeof(MarsOffice.Qeeps.Access.Startup))]
 namespace MarsOffice.Qeeps.Access
@@ -28,6 +29,7 @@ namespace MarsOffice.Qeeps.Access
         public override void Configure(IFunctionsHostBuilder builder)
         {
             builder.Services.AddAutoMapper(typeof(Startup).Assembly);
+            builder.Services.AddValidatorsFromAssembly(typeof(Startup).Assembly);
 
             builder.Services.AddTransient(_ =>
             {
