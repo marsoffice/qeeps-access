@@ -29,7 +29,7 @@ namespace MarsOffice.Qeeps.Access
 
         [FunctionName("PopulateRedisUsers")]
         public async Task Run([TimerTrigger("0 */15 * * * *",RunOnStartup = true
-        )] TimerInfo _,
+        )] TimerInfo timerInfo,
         [Blob("graph-api/delta_users.json", FileAccess.Read)] Stream deltaFile,
         [Blob("graph-api/delta_users.json", FileAccess.Write)] Stream deltaFileWrite)
         {

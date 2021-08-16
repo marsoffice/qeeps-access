@@ -114,22 +114,24 @@ namespace MarsOffice.Qeeps.Access
             using var streamReader = new StreamReader(req.Body);
             var json = await streamReader.ReadToEndAsync();
             var ids = JsonConvert.DeserializeObject<IEnumerable<string>>(json);
-
             var preferences = new List<UserPreferencesDto>();
-
-            var response = client.CreateDocumentQuery<UserPreferencesEntity>(collectionUri)
-                .Where(x => ids.Contains(x.Id))
-                .AsDocumentQuery();
-
-            while (response.HasMoreResults)
+            foreach (var uid in ids)
             {
-                var data = await response.ExecuteNextAsync<UserPreferencesEntity>();
-                if (data != null)
+                var response = client.CreateDocumentQuery<UserPreferencesEntity>(collectionUri, new FeedOptions {
+                    PartitionKey = new PartitionKey(uid)
+                })
+                    .Where(x => x.Id == uid)
+                    .AsDocumentQuery();
+
+                while (response.HasMoreResults)
                 {
-                    preferences.AddRange(_mapper.Map<IEnumerable<UserPreferencesDto>>(data.ToList()));
+                    var data = await response.ExecuteNextAsync<UserPreferencesEntity>();
+                    if (data != null)
+                    {
+                        preferences.AddRange(_mapper.Map<IEnumerable<UserPreferencesDto>>(data.ToList()));
+                    }
                 }
             }
-
             return new JsonResult(_mapper.Map<IEnumerable<UserPreferencesDto>>(preferences), new JsonSerializerSettings
             {
                 ContractResolver = new CamelCasePropertyNamesContractResolver()
