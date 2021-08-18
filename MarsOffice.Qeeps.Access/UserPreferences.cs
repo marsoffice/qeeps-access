@@ -48,7 +48,7 @@ namespace MarsOffice.Qeeps.Access
                 Id = "UserPreferences",
                 PartitionKey = new PartitionKeyDefinition {
                     Version = PartitionKeyDefinitionVersion.V1,
-                    Paths = new System.Collections.ObjectModel.Collection<string>(new List<string>() {"UserId"})
+                    Paths = new System.Collections.ObjectModel.Collection<string>(new List<string>() {"/UserId"})
                 }
             };
             await client.CreateDocumentCollectionIfNotExistsAsync(UriFactory.CreateDatabaseUri("access"), col);
