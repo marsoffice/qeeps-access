@@ -34,13 +34,21 @@ namespace MarsOffice.Qeeps.Access
             [CosmosDB(
                 databaseName: "access",
                 collectionName: "UserPreferences",
-                #if DEBUG
-                CreateIfNotExists = true,
-                PartitionKey = "UserId",
-                #endif
                 ConnectionStringSetting = "cdbconnectionstring")] DocumentClient client
             )
         {
+            #if DEBUG
+            var db = new Database
+            {
+                Id = "access"
+            };
+            await client.CreateDatabaseIfNotExistsAsync(db);
+
+            var col = new DocumentCollection {
+                Id = "UserPreferences"
+            };
+            await client.CreateDocumentCollectionIfNotExistsAsync(UriFactory.CreateDatabaseUri("access"), col);
+            #endif
             var principal = QeepsPrincipal.Parse(req);
             var userId = principal.FindFirst("id").Value;
             var collectionUri = UriFactory.CreateDocumentUri("access", "UserPreferences", userId);
@@ -96,14 +104,22 @@ namespace MarsOffice.Qeeps.Access
             [CosmosDB(
                 databaseName: "access",
                 collectionName: "UserPreferences",
-                #if DEBUG
-                CreateIfNotExists = true,
-                PartitionKey = "UserId",
-                #endif
                 ConnectionStringSetting = "cdbconnectionstring")] DocumentClient client,
                 ClaimsPrincipal principal
             )
         {
+            #if DEBUG
+            var db = new Database
+            {
+                Id = "access"
+            };
+            await client.CreateDatabaseIfNotExistsAsync(db);
+
+            var col = new DocumentCollection {
+                Id = "UserPreferences"
+            };
+            await client.CreateDocumentCollectionIfNotExistsAsync(UriFactory.CreateDatabaseUri("access"), col);
+            #endif
             var env = Environment.GetEnvironmentVariable("AZURE_FUNCTIONS_ENVIRONMENT") ?? "Development";
             if (env != "Development" && principal.FindFirstValue("roles") != "Application")
             {
