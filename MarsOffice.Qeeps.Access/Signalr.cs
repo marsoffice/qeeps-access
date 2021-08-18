@@ -15,7 +15,7 @@ namespace MarsOffice.Qeeps.Access
         [FunctionName("SignalrNegotiate")]
         public async Task<SignalRConnectionInfo> SignalrNegotiate(
             [HttpTrigger(AuthorizationLevel.Anonymous, "get", "post", Route = "api/access/signalr/negotiate")] HttpRequest req,
-            [SignalRConnectionInfo(HubName = "main", UserId = "{headers.x-ms-client-principal-id}")] SignalRConnectionInfo connectionInfo
+            [SignalRConnectionInfo(HubName = "main", UserId = "{headers.x-ms-client-principal-id}", ConnectionStringSetting = "signalrconnectionstring")] SignalRConnectionInfo connectionInfo
             )
         {
             await Task.CompletedTask;
