@@ -8,7 +8,6 @@ using Microsoft.Azure.Functions.Extensions.DependencyInjection;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Graph;
-using StackExchange.Redis;
 using FluentValidation;
 
 [assembly: FunctionsStartup(typeof(MarsOffice.Qeeps.Access.Startup))]
@@ -59,13 +58,6 @@ namespace MarsOffice.Qeeps.Access
                     return Task.CompletedTask;
                 }));
                 return graphServiceClient;
-            });
-
-            builder.Services.AddSingleton(_ =>
-            {
-                var mux = new Lazy<IConnectionMultiplexer>(() => 
-                    ConnectionMultiplexer.Connect(builder.GetContext().Configuration["redisconnectionstring"]));
-                return mux;
             });
         }
     }

@@ -23,8 +23,6 @@
     <PackageReference Include="FluentValidation" Version="10.3.0" />
     <PackageReference Include="FluentValidation.DependencyInjectionExtensions" Version="10.3.0" />
     <PackageReference Include="Microsoft.NET.Sdk.Functions" Version="3.0.13" />
-
-    <PackageReference Include="StackExchange.Redis" Version="2.2.62" />
   </ItemGroup>
   <ItemGroup>
     <None Update="host.json">
