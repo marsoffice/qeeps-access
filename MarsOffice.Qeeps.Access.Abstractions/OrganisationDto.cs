@@ -7,6 +7,6 @@ namespace MarsOffice.Qeeps.Access.Abstractions
     {
         public string Id { get; set; }
         public string Name { get; set; }
-        public List<OrganisationDto> Children { get; set; }
+        public string ParentIds { get; set; }
     }
 }
