@@ -89,12 +89,9 @@ namespace MarsOffice.Qeeps.Access
                 var response = await membersRequest.GetAsync();
                 var childGroups = response.CurrentPage.Where(x => x.ODataType == "#microsoft.graph.group").ToList();
                 var users = response.CurrentPage.Where(x => x.ODataType == "#microsoft.graph.user").ToList();
-                if (childGroups == null || !childGroups.Any())
+                foreach (var u in users)
                 {
-                    foreach (var u in users)
-                    {
-                        await _redisDb.StringSetAsync($"{u.Id}_{group.Id}", "");
-                    }
+                    await _redisDb.StringSetAsync($"{u.Id}_{group.Id}", "");
                 }
                 foreach (var child in childGroups)
                 {
