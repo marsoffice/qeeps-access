@@ -79,7 +79,7 @@ namespace MarsOffice.Qeeps.Access
                     {
                         ContractResolver = new CamelCasePropertyNamesContractResolver()
                     });
-                    await _redisDb.StringSetAsync($"user_" + u.Id, json);
+                    await _redisDb.StringSetAsync(u.Id, json);
                 }
                 usersRequest = usersResponse.NextPageRequest;
             }
@@ -107,7 +107,7 @@ namespace MarsOffice.Qeeps.Access
                         Name = user.DisplayName,
                         Email = user.UserPrincipalName
                     };
-                    var foundKeys = _server.Keys(_config.GetValue<int>("redisdatabase_users"), $"user_{user.Id}");
+                    var foundKeys = _server.Keys(_config.GetValue<int>("redisdatabase_users"), user.Id);
                     if (foundKeys.Any())
                     {
                         if (user.AdditionalData != null && user.AdditionalData.ContainsKey("@removed"))
@@ -130,7 +130,7 @@ namespace MarsOffice.Qeeps.Access
                         {
                             ContractResolver = new CamelCasePropertyNamesContractResolver()
                         });
-                        await _redisDb.StringSetAsync($"user_{user.Id}", json);
+                        await _redisDb.StringSetAsync(user.Id, json);
                     }
                 }
                 lastDeltaRequest = response.NextPageRequest;

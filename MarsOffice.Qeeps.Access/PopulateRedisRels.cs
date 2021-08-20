@@ -13,26 +13,26 @@ using StackExchange.Redis;
 
 namespace MarsOffice.Qeeps.Access
 {
-    public class PopulateRedisGroups
+    public class PopulateRedisRels
     {
         private readonly GraphServiceClient _graphClient;
         private readonly IConnectionMultiplexer _mux;
         private readonly IDatabase _redisDb;
         private readonly IServer _server;
         private readonly IConfiguration _config;
-        public PopulateRedisGroups(GraphServiceClient graphClient, Lazy<IConnectionMultiplexer> mux, IConfiguration config)
+        public PopulateRedisRels(GraphServiceClient graphClient, Lazy<IConnectionMultiplexer> mux, IConfiguration config)
         {
             _graphClient = graphClient;
             _mux = mux.Value;
-            _redisDb = mux.Value.GetDatabase(config.GetValue<int>("redisdatabase_groups"));
+            _redisDb = mux.Value.GetDatabase(config.GetValue<int>("redisdatabase_rels"));
             _server = mux.Value.GetServer(mux.Value.GetEndPoints()[0]);
             _config = config;
         }
 
-        [FunctionName("PopulateRedisGroups")]
+        [FunctionName("PopulateRedisRels")]
         public async Task Run([TimerTrigger("0 */15 * * * *", RunOnStartup = true)] TimerInfo timerInfo,
-        [Blob("graph-api/delta_groups.json", FileAccess.Read)] Stream deltaFile,
-        [Blob("graph-api/delta_groups.json", FileAccess.Write)] Stream deltaFileWrite)
+        [Blob("graph-api/delta_rels.json", FileAccess.Read)] Stream deltaFile,
+        [Blob("graph-api/delta_rels.json", FileAccess.Write)] Stream deltaFileWrite)
         {
             var lastDelta = "latest";
             var isRedisEmpty = !await _redisDb.KeyExistsAsync("dummy");
@@ -59,27 +59,26 @@ namespace MarsOffice.Qeeps.Access
                     var resp = await req.GetAsync();
                     foreach (var g in resp.CurrentPage)
                     {
-                        await PopulateGroupsRecursively(g.Id);
+                        await PopulateRelsRecursively(g.Id);
                     }
                     req = resp.NextPageRequest;
                 }
-                await PopulateGroupsDelta(deltaFileWrite, lastDelta);
+                await PopulateRelsDelta(deltaFileWrite, lastDelta);
                 await _redisDb.StringSetAsync($"dummy", "dummy");
             }
             else
             {
-                await PopulateGroupsDelta(deltaFileWrite, lastDelta);
+                await PopulateRelsDelta(deltaFileWrite, lastDelta);
             }
         }
 
-        private async Task PopulateGroupsRecursively(string id, string prefix = "")
+        private async Task PopulateRelsRecursively(string id)
         {
             var group = (await _graphClient
                 .Groups
                 .Request()
                 .Filter($"id eq '{id}'")
                 .Select(x => new { x.Id, x.DisplayName }).GetAsync()).CurrentPage[0];
-            await _redisDb.StringSetAsync($"{prefix}_{group.Id}", group.DisplayName);
 
             var membersRequest = _graphClient.Groups[id]
              .Members
@@ -88,15 +87,24 @@ namespace MarsOffice.Qeeps.Access
             while (membersRequest != null)
             {
                 var response = await membersRequest.GetAsync();
-                foreach (var child in response.CurrentPage.Where(x => x.ODataType == "#microsoft.graph.group").ToList())
+                var childGroups = response.CurrentPage.Where(x => x.ODataType == "#microsoft.graph.group").ToList();
+                var users = response.CurrentPage.Where(x => x.ODataType == "#microsoft.graph.user").ToList();
+                if (childGroups == null || !childGroups.Any())
                 {
-                    await PopulateGroupsRecursively(child.Id, $"{prefix}_{id}");
+                    foreach (var u in users)
+                    {
+                        await _redisDb.StringSetAsync($"{u.Id}_{group.Id}", "");
+                    }
+                }
+                foreach (var child in childGroups)
+                {
+                    await PopulateRelsRecursively(child.Id);
                 }
                 membersRequest = response.NextPageRequest;
             }
         }
 
-        private async Task PopulateGroupsDelta(Stream stream, string lastDelta)
+        private async Task PopulateRelsDelta(Stream stream, string lastDelta)
         {
             var lastDeltaRequest = _graphClient
                 .Groups.Delta()
@@ -112,69 +120,29 @@ namespace MarsOffice.Qeeps.Access
                 }
                 foreach (var group in response.CurrentPage)
                 {
-                    var foundKeys = _server.Keys(_config.GetValue<int>("redisdatabase_groups"), $"*_{group.Id}");
-                    if (foundKeys.Any())
+                    if (group.AdditionalData != null && group.AdditionalData.ContainsKey("@removed"))
                     {
-                        if (group.AdditionalData != null && group.AdditionalData.ContainsKey("@removed"))
-                        {
-                            await _redisDb.KeyDeleteAsync(foundKeys.ToArray());
-                            var allKeysToDelete = _server.Keys(_config.GetValue<int>("redisdatabase_groups"), $"*_{group.Id}_*");
-                            foreach (var keyToDelete in allKeysToDelete)
-                            {
-                                var newKey = keyToDelete.ToString().Split("_").Last();
-                                await _redisDb.KeyRenameAsync(keyToDelete, "_" + newKey);
-                            }
-                        }
-                        else
-                        {
-                            var key = foundKeys.First();
-                            await _redisDb.StringSetAsync(key, group.DisplayName);
-                        }
+                        var keysToDelete = _server.Keys(_config.GetValue<int>("redisdatabase_rels"), $"*_{group.Id}");
+                        await _redisDb.KeyDeleteAsync(keysToDelete.ToArray());
+                        return;
                     }
-                    else
-                    {
-                        await _redisDb.StringSetAsync($"_{group.Id}", group.DisplayName);
-                    }
-                }
-
-
-                foreach (var group in response.CurrentPage)
-                {
-
-                    // members
                     if (group.AdditionalData != null && group.AdditionalData.ContainsKey("members@delta"))
                     {
                         var memberChanges = group.AdditionalData["members@delta"] as JArray;
                         foreach (JObject jObj in memberChanges)
                         {
-                            if (jObj.GetValue("@odata.type").ToString() != "#microsoft.graph.group")
+                            if (jObj.GetValue("@odata.type").ToString() != "#microsoft.graph.user")
                             {
                                 continue;
                             }
-                            var id = jObj.GetValue("id").ToString();
+                            var uid = jObj.GetValue("id").ToString();
                             if (jObj.ContainsKey("@removed"))
                             {
-                                var foundKeysWithParent = _server.Keys(_config.GetValue<int>("redisdatabase_groups"), $"*_{id}*");
-                                foreach (var k in foundKeysWithParent)
-                                {
-                                    var strK = k.ToString();
-                                    var parentsRemoved = strK[strK.IndexOf($"_{id}")..];
-                                    await _redisDb.KeyRenameAsync(k, parentsRemoved);
-                                }
+                                await _redisDb.KeyDeleteAsync($"{uid}_{group.Id}");
                             }
                             else
                             {
-                                var foundKeyWithParent = _server.Keys(_config.GetValue<int>("redisdatabase_groups"), $"*_{id}");
-                                if (foundKeyWithParent.Any())
-                                {
-                                    var singleKey = foundKeyWithParent.First();
-                                    var foundParentKeys = _server.Keys(_config.GetValue<int>("redisdatabase_groups"), $"*_{group.Id}");
-                                    if (foundParentKeys.Any())
-                                    {
-                                        var parentKey = foundParentKeys.First();
-                                        await _redisDb.KeyRenameAsync(singleKey, $"{parentKey}_{id}");
-                                    }
-                                }
+                                await _redisDb.StringSetAsync($"{uid}_{group.Id}", "");
                             }
                         }
                     }

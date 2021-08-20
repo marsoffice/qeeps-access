@@ -42,7 +42,7 @@ namespace MarsOffice.Qeeps.Access
             var userDtos = new List<UserDto>();
             foreach (var id in ids)
             {
-                var value = await _database.StringGetAsync($"user_{id}");
+                var value = await _database.StringGetAsync(id);
                 if (!string.IsNullOrEmpty(value))
                 {
                     userDtos.Add(
@@ -67,8 +67,8 @@ namespace MarsOffice.Qeeps.Access
             {
                 return new StatusCodeResult(401);
             }
-            var id = req.RouteValues["id"];
-            var value = await _database.StringGetAsync($"user_{id}");
+            var id = req.RouteValues["id"].ToString();
+            var value = await _database.StringGetAsync(id);
             if (string.IsNullOrEmpty(value))
             {
                 return new NotFoundResult();
