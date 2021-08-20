@@ -7,7 +7,7 @@ namespace MarsOffice.Qeeps.Access.Entities
         [JsonProperty("id")]
         public string Id { get; set; }
         public string Name { get; set; }
-        public string ParentIds { get; set; }
+        public string FullId { get; set; }
         public string Partition {get;set;} = "OrganisationEntity";
     }
 }
