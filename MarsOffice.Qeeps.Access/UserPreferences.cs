@@ -28,8 +28,7 @@ namespace MarsOffice.Qeeps.Access
         [FunctionName("GetUserPreferences")]
         public async Task<IActionResult> GetUserPreferences(
             [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "api/access/userPreferences")] HttpRequest req,
-            [CosmosDB(
-                ConnectionStringSetting = "cdbconnectionstring")] DocumentClient client
+            [CosmosDB(ConnectionStringSetting = "cdbconnectionstring")] DocumentClient client
             )
         {
 #if DEBUG
