@@ -9,6 +9,7 @@ using Microsoft.Azure.Documents.Linq;
 using Microsoft.Azure.WebJobs;
 using Microsoft.Graph;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 using Newtonsoft.Json.Serialization;
 
 namespace MarsOffice.Qeeps.Access
@@ -22,8 +23,8 @@ namespace MarsOffice.Qeeps.Access
 
         }
 
-        //[FunctionName("PopulateAccessData")]
-        public async Task Run([TimerTrigger("0 */15 * * * *", RunOnStartup = true)] TimerInfo timerInfo,
+       // [FunctionName("PopulateAccessData")]
+        public async Task Run([TimerTrigger("0 */15 * * * *", RunOnStartup = false)] TimerInfo timerInfo,
         [Blob("graph-api/delta_access.json", FileAccess.Read)] Stream deltaFile,
         [Blob("graph-api/delta_access.json", FileAccess.Write)] Stream deltaFileWrite,
         [CosmosDB(ConnectionStringSetting = "cdbconnectionstring")] DocumentClient client
@@ -168,12 +169,13 @@ namespace MarsOffice.Qeeps.Access
                     {
                         OrganisationId = id,
                         FullOrganisationId = $"{prefix}_{id}",
-                        UserId = casted.Id
+                        UserId = casted.Id,
+                        Id = id + "_" + casted.Id
                     };
                     await client.UpsertDocumentAsync(orgAccessesCol, newAccessEntity, new RequestOptions
                     {
                         PartitionKey = new PartitionKey("OrganisationAccessEntity")
-                    });
+                    }, true);
                 }
                 foreach (var child in response.CurrentPage.Where(x => x.ODataType == "#microsoft.graph.group").ToList())
                 {
@@ -258,44 +260,16 @@ namespace MarsOffice.Qeeps.Access
 
                         if (userIdsToCheck.Any())
                         {
-                            var okUserIds = new HashSet<string>();
-                            var remainingAccessesForUsersQuery = client.CreateDocumentQuery<OrganisationAccessEntity>(orgAccessesCol, new FeedOptions
-                            {
-                                PartitionKey = new PartitionKey("OrganisationAccessEntity")
-                            })
-                            .Where(x => userIdsToCheck.Contains(x.UserId))
-                            .Select(x => new OrganisationAccessEntity
-                            {
-                                UserId = x.UserId
-                            })
-                            .Distinct()
-                            .AsDocumentQuery();
-                            while (remainingAccessesForUsersQuery.HasMoreResults)
-                            {
-                                var usersResult = await remainingAccessesForUsersQuery.ExecuteNextAsync<OrganisationAccessEntity>();
-                                foreach (var x in usersResult)
-                                {
-                                    okUserIds.Add(x.UserId);
-                                }
-                            }
-
-                            var userIdsToDelete = userIdsToCheck.Where(tc => !okUserIds.Any(z => z != tc)).ToList();
-                            foreach (var uid in userIdsToDelete)
-                            {
-                                var dUri = UriFactory.CreateDocumentUri("access", "Users", uid);
-                                await client.DeleteDocumentAsync(dUri, new RequestOptions
-                                {
-                                    PartitionKey = new PartitionKey("UserEntity")
-                                });
-                            }
+                            await DeleteStaleUsers(userIdsToCheck, client);
                         }
                         continue;
                     }
 
                     var docIdUri = UriFactory.CreateDocumentUri("access", "Organisations", g.Id);
-                    var groupEntity = (await client.ReadDocumentAsync<OrganisationEntity>(docIdUri, new RequestOptions {
+                    var groupEntity = (await client.ReadDocumentAsync<OrganisationEntity>(docIdUri, new RequestOptions
+                    {
                         PartitionKey = new PartitionKey("OrganisationEntity")
-                    })).Document;
+                    }))?.Document;
 
                     if (groupEntity == null)
                     {
@@ -305,12 +279,14 @@ namespace MarsOffice.Qeeps.Access
                             FullId = $"_{g.Id}",
                             Name = g.DisplayName
                         };
-                        
+
                         await client.UpsertDocumentAsync(orgCol, groupEntity, new RequestOptions
                         {
                             PartitionKey = new PartitionKey("OrganisationEntity")
                         }, true);
-                    } else {
+                    }
+                    else
+                    {
                         groupEntity.Name = g.DisplayName;
                         await client.UpsertDocumentAsync(orgCol, groupEntity, new RequestOptions
                         {
@@ -327,6 +303,202 @@ namespace MarsOffice.Qeeps.Access
             }
 
 
+
+            // PART 2 - Group Members
+            lastDeltaRequest = _graphClient
+                .Groups.Delta()
+                .Request();
+            lastDeltaRequest.QueryOptions.Add(new QueryOption("$deltaToken", lastDelta));
+
+
+            while (lastDeltaRequest != null)
+            {
+                var response = await lastDeltaRequest.GetAsync();
+
+                foreach (var g in response.CurrentPage)
+                {
+                    if (g.AdditionalData != null && g.AdditionalData.ContainsKey("members@delta"))
+                    {
+                        var docIdUri = UriFactory.CreateDocumentUri("access", "Organisations", g.Id);
+                        var groupEntity = (await client.ReadDocumentAsync<OrganisationEntity>(docIdUri, new RequestOptions
+                        {
+                            PartitionKey = new PartitionKey("OrganisationEntity")
+                        }))?.Document;
+
+                        if (groupEntity == null)
+                        {
+                            continue;
+                        }
+
+                        var memberChanges = g.AdditionalData["members@delta"] as JArray;
+                        foreach (JObject jObj in memberChanges)
+                        {
+                            if (jObj.GetValue("@odata.type").ToString() != "#microsoft.graph.group")
+                            {
+                                continue;
+                            }
+                            var memberId = jObj.GetValue("id").ToString();
+
+                            if (jObj.ContainsKey("@removed"))
+                            {
+                                var docsToRenameQuery = client.CreateDocumentQuery<OrganisationEntity>(orgCol, new FeedOptions
+                                {
+                                    PartitionKey = new PartitionKey("OrganisationEntity")
+                                })
+                                .Where(x => x.FullId.Contains(groupEntity.FullId + "_" + memberId))
+                                .AsDocumentQuery();
+                                while (docsToRenameQuery.HasMoreResults)
+                                {
+                                    var toRename = await docsToRenameQuery.ExecuteNextAsync<OrganisationEntity>();
+                                    foreach (var child in toRename)
+                                    {
+                                        child.FullId = child.FullId.Replace(groupEntity.FullId, "");
+                                        var uri = UriFactory.CreateDocumentUri("access", "Organisations", child.Id);
+                                        await client.UpsertDocumentAsync(uri, child, new RequestOptions
+                                        {
+                                            PartitionKey = new PartitionKey("OrganisationEntity")
+                                        }, true);
+                                    }
+                                }
+
+                                var accessDocsToRenameQuery = client.CreateDocumentQuery<OrganisationAccessEntity>(orgAccessesCol, new FeedOptions
+                                {
+                                    PartitionKey = new PartitionKey("OrganisationAccessEntity")
+                                })
+                                .Where(x => x.FullOrganisationId.Contains(groupEntity.FullId + "_" + memberId))
+                                .AsDocumentQuery();
+                                while (accessDocsToRenameQuery.HasMoreResults)
+                                {
+                                    var toRename = await accessDocsToRenameQuery.ExecuteNextAsync<OrganisationAccessEntity>();
+                                    foreach (var child in toRename)
+                                    {
+                                        child.FullOrganisationId = child.FullOrganisationId.Replace(groupEntity.FullId, "");
+                                        var uri = UriFactory.CreateDocumentUri("access", "OrganisationAccesses", child.Id);
+                                        await client.UpsertDocumentAsync(uri, child, new RequestOptions
+                                        {
+                                            PartitionKey = new PartitionKey("OrganisationAccessEntity")
+                                        }, true);
+                                    }
+                                }
+                            }
+                            else
+                            {
+                                var docsToRenameQuery = client.CreateDocumentQuery<OrganisationEntity>(orgCol, new FeedOptions
+                                {
+                                    PartitionKey = new PartitionKey("OrganisationEntity")
+                                })
+                                .Where(x => x.FullId.Contains("_" + memberId))
+                                .AsDocumentQuery();
+                                while (docsToRenameQuery.HasMoreResults)
+                                {
+                                    var toRename = await docsToRenameQuery.ExecuteNextAsync<OrganisationEntity>();
+                                    foreach (var child in toRename)
+                                    {
+                                        child.FullId = $"{groupEntity.FullId}{child.FullId}";
+                                        var uri = UriFactory.CreateDocumentUri("access", "Organisations", child.Id);
+                                        await client.UpsertDocumentAsync(uri, child, new RequestOptions
+                                        {
+                                            PartitionKey = new PartitionKey("OrganisationEntity")
+                                        }, true);
+                                    }
+                                }
+
+                                var accessDocsToRenameQuery = client.CreateDocumentQuery<OrganisationAccessEntity>(orgAccessesCol, new FeedOptions
+                                {
+                                    PartitionKey = new PartitionKey("OrganisationAccessEntity")
+                                })
+                                .Where(x => x.FullOrganisationId.Contains("_" + memberId))
+                                .AsDocumentQuery();
+                                while (accessDocsToRenameQuery.HasMoreResults)
+                                {
+                                    var toRename = await accessDocsToRenameQuery.ExecuteNextAsync<OrganisationAccessEntity>();
+                                    foreach (var child in toRename)
+                                    {
+                                        child.FullOrganisationId = $"{groupEntity.FullId}{child.FullOrganisationId}";
+                                        var uri = UriFactory.CreateDocumentUri("access", "OrganisationAccesses", child.Id);
+                                        await client.UpsertDocumentAsync(uri, child, new RequestOptions
+                                        {
+                                            PartitionKey = new PartitionKey("OrganisationAccessEntity")
+                                        }, true);
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+
+
+            // PART 3 - Group User Members
+            lastDeltaRequest = _graphClient
+                .Groups.Delta()
+                .Request();
+            lastDeltaRequest.QueryOptions.Add(new QueryOption("$deltaToken", lastDelta));
+
+            var userIdsToCheck2 = new HashSet<string>();
+
+            while (lastDeltaRequest != null)
+            {
+                var response = await lastDeltaRequest.GetAsync();
+
+                foreach (var g in response.CurrentPage)
+                {
+                    if (g.AdditionalData != null && g.AdditionalData.ContainsKey("members@delta"))
+                    {
+                        var docIdUri = UriFactory.CreateDocumentUri("access", "Organisations", g.Id);
+                        var groupEntity = (await client.ReadDocumentAsync<OrganisationEntity>(docIdUri, new RequestOptions
+                        {
+                            PartitionKey = new PartitionKey("OrganisationEntity")
+                        }))?.Document;
+
+                        if (groupEntity == null)
+                        {
+                            continue;
+                        }
+
+                        var memberChanges = g.AdditionalData["members@delta"] as JArray;
+                        foreach (JObject jObj in memberChanges)
+                        {
+                            if (jObj.GetValue("@odata.type").ToString() != "#microsoft.graph.user")
+                            {
+                                continue;
+                            }
+                            var memberId = jObj.GetValue("id").ToString();
+
+                            if (jObj.ContainsKey("@removed"))
+                            {
+                                var accessDocUri = UriFactory.CreateDocumentUri("access", "OrganisationAccesses", g.Id + "_" + memberId);
+                                await client.DeleteDocumentAsync(accessDocUri, new RequestOptions
+                                {
+                                    PartitionKey = new PartitionKey("OrganisationAccessEntity")
+                                });
+                                userIdsToCheck2.Add(memberId);
+                            }
+                            else
+                            {
+                                var newAccessEntity = new OrganisationAccessEntity
+                                {
+                                    OrganisationId = g.Id,
+                                    FullOrganisationId = groupEntity.FullId,
+                                    UserId = memberId,
+                                    Id = g.Id + "_" + memberId
+                                };
+                                await client.UpsertDocumentAsync(orgAccessesCol, newAccessEntity, new RequestOptions
+                                {
+                                    PartitionKey = new PartitionKey("OrganisationAccessEntity")
+                                }, true);
+                            }
+                        }
+                    }
+                }
+            }
+
+            if (userIdsToCheck2.Any())
+            {
+                await DeleteStaleUsers(userIdsToCheck2, client);
+            }
+
             var obj = new DeltaFile
             {
                 Delta = nextDelta.Split("?")[1].Replace("$deltatoken=", "")
@@ -337,6 +509,41 @@ namespace MarsOffice.Qeeps.Access
             });
             using var streamWriter = new StreamWriter(stream);
             await streamWriter.WriteAsync(deltaFileJson);
+        }
+
+        private async Task DeleteStaleUsers(HashSet<string> userIdsToCheck, DocumentClient client)
+        {
+            var orgAccessesCol = UriFactory.CreateDocumentCollectionUri("access", "OrganisationAccesses");
+            var okUserIds = new HashSet<string>();
+            var remainingAccessesForUsersQuery = client.CreateDocumentQuery<OrganisationAccessEntity>(orgAccessesCol, new FeedOptions
+            {
+                PartitionKey = new PartitionKey("OrganisationAccessEntity")
+            })
+            .Where(x => userIdsToCheck.Contains(x.UserId))
+            .Select(x => new OrganisationAccessEntity
+            {
+                UserId = x.UserId
+            })
+            .Distinct()
+            .AsDocumentQuery();
+            while (remainingAccessesForUsersQuery.HasMoreResults)
+            {
+                var usersResult = await remainingAccessesForUsersQuery.ExecuteNextAsync<OrganisationAccessEntity>();
+                foreach (var x in usersResult)
+                {
+                    okUserIds.Add(x.UserId);
+                }
+            }
+
+            var userIdsToDelete = userIdsToCheck.Where(tc => !okUserIds.Any(z => z != tc)).ToList();
+            foreach (var uid in userIdsToDelete)
+            {
+                var dUri = UriFactory.CreateDocumentUri("access", "Users", uid);
+                await client.DeleteDocumentAsync(dUri, new RequestOptions
+                {
+                    PartitionKey = new PartitionKey("UserEntity")
+                });
+            }
         }
     }
 }
