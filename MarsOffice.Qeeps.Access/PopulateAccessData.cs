@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -221,10 +222,16 @@ namespace MarsOffice.Qeeps.Access
                     }
 
                     var docIdUri = UriFactory.CreateDocumentUri("access", "Organisations", g.Id);
-                    var groupEntity = (await client.ReadDocumentAsync<OrganisationEntity>(docIdUri, new RequestOptions
+
+                    OrganisationEntity groupEntity = null;
+                    try
                     {
-                        PartitionKey = new PartitionKey("OrganisationEntity")
-                    }))?.Document;
+                        groupEntity = (await client.ReadDocumentAsync<OrganisationEntity>(docIdUri, new RequestOptions
+                        {
+                            PartitionKey = new PartitionKey("OrganisationEntity")
+                        }))?.Document;
+                    }
+                    catch (Exception) { }
 
                     if (groupEntity == null)
                     {
@@ -270,10 +277,15 @@ namespace MarsOffice.Qeeps.Access
                     if (g.AdditionalData != null && g.AdditionalData.ContainsKey("members@delta"))
                     {
                         var docIdUri = UriFactory.CreateDocumentUri("access", "Organisations", g.Id);
-                        var groupEntity = (await client.ReadDocumentAsync<OrganisationEntity>(docIdUri, new RequestOptions
+                        OrganisationEntity groupEntity = null;
+                        try
                         {
-                            PartitionKey = new PartitionKey("OrganisationEntity")
-                        }))?.Document;
+                            groupEntity = (await client.ReadDocumentAsync<OrganisationEntity>(docIdUri, new RequestOptions
+                            {
+                                PartitionKey = new PartitionKey("OrganisationEntity")
+                            }))?.Document;
+                        }
+                        catch (Exception) { }
 
                         if (groupEntity == null)
                         {
@@ -396,10 +408,15 @@ namespace MarsOffice.Qeeps.Access
                     if (g.AdditionalData != null && g.AdditionalData.ContainsKey("members@delta"))
                     {
                         var docIdUri = UriFactory.CreateDocumentUri("access", "Organisations", g.Id);
-                        var groupEntity = (await client.ReadDocumentAsync<OrganisationEntity>(docIdUri, new RequestOptions
+                        OrganisationEntity groupEntity = null;
+                        try
                         {
-                            PartitionKey = new PartitionKey("OrganisationEntity")
-                        }))?.Document;
+                            groupEntity = (await client.ReadDocumentAsync<OrganisationEntity>(docIdUri, new RequestOptions
+                            {
+                                PartitionKey = new PartitionKey("OrganisationEntity")
+                            }))?.Document;
+                        }
+                        catch (Exception) { }
 
                         if (groupEntity == null)
                         {

@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Threading.Tasks;
@@ -133,15 +134,18 @@ namespace MarsOffice.Qeeps.Access
                     {
                         await client.DeleteDocumentAsync(userUri, new RequestOptions
                         {
-                            PartitionKey = new PartitionKey("UserEntity")
+                            PartitionKey = new PartitionKey("UserEntity"),
                         });
                     }
                     else
                     {
-                        var existingUser = (await client.ReadDocumentAsync<UserEntity>(userUri, new RequestOptions
+                        UserEntity existingUser = null;
+                        try {
+                        existingUser = (await client.ReadDocumentAsync<UserEntity>(userUri, new RequestOptions
                         {
                             PartitionKey = new PartitionKey("UserEntity")
                         }))?.Document;
+                        } catch (Exception) {}
 
                         if (existingUser != null)
                         {
