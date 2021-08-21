@@ -101,8 +101,7 @@ namespace MarsOffice.Qeeps.Access
                         Name = u.DisplayName,
                         Email = u.UserPrincipalName
                     };
-                    var userUri = UriFactory.CreateDocumentUri("access", "Users", u.Id);
-                    await client.UpsertDocumentAsync(userUri, newEntity, new RequestOptions
+                    await client.UpsertDocumentAsync(usersCollectionUri, newEntity, new RequestOptions
                     {
                         PartitionKey = new PartitionKey("UserEntity")
                     }, true);
@@ -113,6 +112,7 @@ namespace MarsOffice.Qeeps.Access
 
         private async Task PopulateDelta(DocumentClient client, Stream stream, string lastDelta)
         {
+            var usersCollection = UriFactory.CreateDocumentCollectionUri("access", "Users");
             var lastDeltaRequest = _graphClient
                             .Users
                             .Delta()
@@ -147,7 +147,6 @@ namespace MarsOffice.Qeeps.Access
                         {
                             existingUser.Email = user.UserPrincipalName;
                             existingUser.Name = user.DisplayName;
-
                         }
                         else
                         {
@@ -158,7 +157,7 @@ namespace MarsOffice.Qeeps.Access
                                 Id = user.Id
                             };
                         }
-                        await client.UpsertDocumentAsync(userUri, existingUser, new RequestOptions
+                        await client.UpsertDocumentAsync(usersCollection, existingUser, new RequestOptions
                         {
                             PartitionKey = new PartitionKey("UserEntity")
                         });
