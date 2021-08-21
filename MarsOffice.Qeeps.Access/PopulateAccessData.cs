@@ -7,6 +7,7 @@ using Microsoft.Azure.Documents;
 using Microsoft.Azure.Documents.Client;
 using Microsoft.Azure.Documents.Linq;
 using Microsoft.Azure.WebJobs;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Graph;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
@@ -17,14 +18,16 @@ namespace MarsOffice.Qeeps.Access
     public class PopulateAccessData
     {
         private readonly GraphServiceClient _graphClient;
+        private readonly IConfiguration _config;
 
-        public PopulateAccessData()
+        public PopulateAccessData(GraphServiceClient graphClient, IConfiguration config)
         {
-
+            _graphClient = graphClient;
+            _config = config;
         }
 
-       // [FunctionName("PopulateAccessData")]
-        public async Task Run([TimerTrigger("0 */15 * * * *", RunOnStartup = false)] TimerInfo timerInfo,
+        [FunctionName("PopulateAccessData")]
+        public async Task Run([TimerTrigger("0 */15 * * * *", RunOnStartup = true)] TimerInfo timerInfo,
         [Blob("graph-api/delta_access.json", FileAccess.Read)] Stream deltaFile,
         [Blob("graph-api/delta_access.json", FileAccess.Write)] Stream deltaFileWrite,
         [CosmosDB(ConnectionStringSetting = "cdbconnectionstring")] DocumentClient client
@@ -38,17 +41,6 @@ namespace MarsOffice.Qeeps.Access
             await client.CreateDatabaseIfNotExistsAsync(db);
 
             var col = new DocumentCollection
-            {
-                Id = "Users",
-                PartitionKey = new PartitionKeyDefinition
-                {
-                    Version = PartitionKeyDefinitionVersion.V1,
-                    Paths = new System.Collections.ObjectModel.Collection<string>(new List<string>() { "/Partition" })
-                }
-            };
-            await client.CreateDocumentCollectionIfNotExistsAsync(UriFactory.CreateDatabaseUri("access"), col);
-
-            col = new DocumentCollection
             {
                 Id = "Organisations",
                 PartitionKey = new PartitionKeyDefinition
@@ -92,7 +84,7 @@ namespace MarsOffice.Qeeps.Access
 
             if (isDbEmpty)
             {
-                await PopulateAll(client);
+                await PopulateAllForGroupRecursively(client, _config["adgroupid"]);
                 await PopulateDelta(client, deltaFileWrite, lastDelta);
             }
             else
@@ -101,27 +93,9 @@ namespace MarsOffice.Qeeps.Access
             }
         }
 
-        private async Task PopulateAll(DocumentClient client)
-        {
-            var req = _graphClient
-                    .Groups
-                    .Request()
-                    .Select(x => new { x.Id, x.DisplayName });
-            while (req != null)
-            {
-                var resp = await req.GetAsync();
-                foreach (var g in resp.CurrentPage)
-                {
-                    await PopulateAllForGroupRecursively(client, g.Id);
-                }
-                req = resp.NextPageRequest;
-            }
-        }
-
         private async Task PopulateAllForGroupRecursively(DocumentClient client, string id, string prefix = "")
         {
             var orgCol = UriFactory.CreateDocumentCollectionUri("access", "Organisations");
-            var usersCol = UriFactory.CreateDocumentCollectionUri("access", "Users");
             var orgAccessesCol = UriFactory.CreateDocumentCollectionUri("access", "OrganisationAccesses");
 
             var group = (await _graphClient
@@ -137,8 +111,7 @@ namespace MarsOffice.Qeeps.Access
                 FullId = $"{prefix}_{group.Id}"
             };
 
-
-            await client.CreateDocumentAsync(orgCol, newOrg, new RequestOptions
+            await client.UpsertDocumentAsync(orgCol, newOrg, new RequestOptions
             {
                 PartitionKey = new PartitionKey("OrganisationEntity")
             }, true);
@@ -153,17 +126,6 @@ namespace MarsOffice.Qeeps.Access
                 foreach (var user in response.CurrentPage.Where(x => x.ODataType == "#microsoft.graph.user").ToList())
                 {
                     var casted = user as Microsoft.Graph.User;
-                    var newUserEntity = new UserEntity
-                    {
-                        Id = casted.Id,
-                        Email = casted.UserPrincipalName,
-                        Name = casted.DisplayName,
-                        UserPreferences = new UserPreferencesEntity()
-                    };
-                    await client.UpsertDocumentAsync(usersCol, newUserEntity, new RequestOptions
-                    {
-                        PartitionKey = new PartitionKey("UserEntity")
-                    }, true);
 
                     var newAccessEntity = new OrganisationAccessEntity
                     {
@@ -237,7 +199,6 @@ namespace MarsOffice.Qeeps.Access
                             }
                         }
 
-                        var userIdsToCheck = new HashSet<string>();
                         var accessesToDeleteQuery = client.CreateDocumentQuery<OrganisationAccessEntity>(orgAccessesCol, new FeedOptions
                         {
                             PartitionKey = new PartitionKey("OrganisationAccessEntity")
@@ -249,18 +210,12 @@ namespace MarsOffice.Qeeps.Access
                             var docs = await accessesToDeleteQuery.ExecuteNextAsync<OrganisationAccessEntity>();
                             foreach (var d in docs)
                             {
-                                userIdsToCheck.Add(d.UserId);
                                 var dUri = UriFactory.CreateDocumentUri("access", "OrganisationAccesses", d.Id);
                                 await client.DeleteDocumentAsync(dUri, new RequestOptions
                                 {
                                     PartitionKey = new PartitionKey("OrganisationAccessEntity")
                                 });
                             }
-                        }
-
-                        if (userIdsToCheck.Any())
-                        {
-                            await DeleteStaleUsers(userIdsToCheck, client);
                         }
                         continue;
                     }
@@ -293,12 +248,7 @@ namespace MarsOffice.Qeeps.Access
                             PartitionKey = new PartitionKey("OrganisationEntity")
                         }, true);
                     }
-
-                    // TODO Members
-
-
                 }
-
                 lastDeltaRequest = response.NextPageRequest;
             }
 
@@ -426,6 +376,7 @@ namespace MarsOffice.Qeeps.Access
                         }
                     }
                 }
+                lastDeltaRequest = response.NextPageRequest;
             }
 
 
@@ -435,8 +386,6 @@ namespace MarsOffice.Qeeps.Access
                 .Groups.Delta()
                 .Request();
             lastDeltaRequest.QueryOptions.Add(new QueryOption("$deltaToken", lastDelta));
-
-            var userIdsToCheck2 = new HashSet<string>();
 
             while (lastDeltaRequest != null)
             {
@@ -473,7 +422,6 @@ namespace MarsOffice.Qeeps.Access
                                 {
                                     PartitionKey = new PartitionKey("OrganisationAccessEntity")
                                 });
-                                userIdsToCheck2.Add(memberId);
                             }
                             else
                             {
@@ -492,11 +440,7 @@ namespace MarsOffice.Qeeps.Access
                         }
                     }
                 }
-            }
-
-            if (userIdsToCheck2.Any())
-            {
-                await DeleteStaleUsers(userIdsToCheck2, client);
+                lastDeltaRequest = response.NextPageRequest;
             }
 
             var obj = new DeltaFile
@@ -509,41 +453,6 @@ namespace MarsOffice.Qeeps.Access
             });
             using var streamWriter = new StreamWriter(stream);
             await streamWriter.WriteAsync(deltaFileJson);
-        }
-
-        private async Task DeleteStaleUsers(HashSet<string> userIdsToCheck, DocumentClient client)
-        {
-            var orgAccessesCol = UriFactory.CreateDocumentCollectionUri("access", "OrganisationAccesses");
-            var okUserIds = new HashSet<string>();
-            var remainingAccessesForUsersQuery = client.CreateDocumentQuery<OrganisationAccessEntity>(orgAccessesCol, new FeedOptions
-            {
-                PartitionKey = new PartitionKey("OrganisationAccessEntity")
-            })
-            .Where(x => userIdsToCheck.Contains(x.UserId))
-            .Select(x => new OrganisationAccessEntity
-            {
-                UserId = x.UserId
-            })
-            .Distinct()
-            .AsDocumentQuery();
-            while (remainingAccessesForUsersQuery.HasMoreResults)
-            {
-                var usersResult = await remainingAccessesForUsersQuery.ExecuteNextAsync<OrganisationAccessEntity>();
-                foreach (var x in usersResult)
-                {
-                    okUserIds.Add(x.UserId);
-                }
-            }
-
-            var userIdsToDelete = userIdsToCheck.Where(tc => !okUserIds.Any(z => z != tc)).ToList();
-            foreach (var uid in userIdsToDelete)
-            {
-                var dUri = UriFactory.CreateDocumentUri("access", "Users", uid);
-                await client.DeleteDocumentAsync(dUri, new RequestOptions
-                {
-                    PartitionKey = new PartitionKey("UserEntity")
-                });
-            }
         }
     }
 }
