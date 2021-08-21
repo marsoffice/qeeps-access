@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Threading.Tasks;
 using MarsOffice.Qeeps.Access.Entities;
 using Microsoft.Azure.Documents;
@@ -50,9 +51,21 @@ namespace MarsOffice.Qeeps.Access
                 }
             };
             await client.CreateDocumentCollectionIfNotExistsAsync(UriFactory.CreateDatabaseUri("access"), col);
+
+            col = new DocumentCollection
+            {
+                Id = "OrganisationAccesses",
+                PartitionKey = new PartitionKeyDefinition
+                {
+                    Version = PartitionKeyDefinitionVersion.V1,
+                    Paths = new System.Collections.ObjectModel.Collection<string>(new List<string>() { "/Partition" })
+                }
+            };
+            await client.CreateDocumentCollectionIfNotExistsAsync(UriFactory.CreateDatabaseUri("access"), col);
 #endif
 
             var usersCollection = UriFactory.CreateDocumentCollectionUri("access", "Users");
+
             var isDbEmpty = (await client.CreateDocumentQuery<UserEntity>(usersCollection, new FeedOptions
             {
                 PartitionKey = new PartitionKey("UserEntity")
@@ -114,6 +127,8 @@ namespace MarsOffice.Qeeps.Access
         private async Task PopulateDelta(DocumentClient client, Stream stream, string lastDelta)
         {
             var usersCollection = UriFactory.CreateDocumentCollectionUri("access", "Users");
+            var orgAccessesCollection = UriFactory.CreateDocumentCollectionUri("access", "OrganisationAccesses");
+
             var lastDeltaRequest = _graphClient
                             .Users
                             .Delta()
@@ -136,16 +151,38 @@ namespace MarsOffice.Qeeps.Access
                         {
                             PartitionKey = new PartitionKey("UserEntity"),
                         });
+
+                        var allAccessesToDeleteQuery = client.CreateDocumentQuery<OrganisationAccessEntity>(orgAccessesCollection, new FeedOptions
+                        {
+                            PartitionKey = new PartitionKey("OrganisationAccessEntity")
+                        })
+                        .Where(x => x.UserId == user.Id)
+                        .AsDocumentQuery();
+
+                        while (allAccessesToDeleteQuery.HasMoreResults)
+                        {
+                            var r = await allAccessesToDeleteQuery.ExecuteNextAsync<OrganisationAccessEntity>();
+                            foreach (var tbd in r)
+                            {
+                                var uri = UriFactory.CreateDocumentUri("access", "OrganisationAccesses", tbd.Id);
+                                await client.DeleteDocumentAsync(uri, new RequestOptions
+                                {
+                                    PartitionKey = new PartitionKey("OrganisationAccessEntity")
+                                });
+                            }
+                        }
                     }
                     else
                     {
                         UserEntity existingUser = null;
-                        try {
-                        existingUser = (await client.ReadDocumentAsync<UserEntity>(userUri, new RequestOptions
+                        try
                         {
-                            PartitionKey = new PartitionKey("UserEntity")
-                        }))?.Document;
-                        } catch (Exception) {}
+                            existingUser = (await client.ReadDocumentAsync<UserEntity>(userUri, new RequestOptions
+                            {
+                                PartitionKey = new PartitionKey("UserEntity")
+                            }))?.Document;
+                        }
+                        catch (Exception) { }
 
                         if (existingUser != null)
                         {
