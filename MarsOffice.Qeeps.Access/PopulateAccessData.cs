@@ -192,8 +192,7 @@ namespace MarsOffice.Qeeps.Access
                             foreach (var d in docs)
                             {
                                 d.FullId = d.FullId.Replace($"_{g.Id}", "");
-                                var dUri = UriFactory.CreateDocumentUri("access", "Organisations", d.Id);
-                                await client.UpsertDocumentAsync(dUri, d, new RequestOptions
+                                await client.UpsertDocumentAsync(orgCol, d, new RequestOptions
                                 {
                                     PartitionKey = new PartitionKey("OrganisationEntity")
                                 }, true);
@@ -315,8 +314,7 @@ namespace MarsOffice.Qeeps.Access
                                     foreach (var child in toRename)
                                     {
                                         child.FullId = child.FullId.Replace(groupEntity.FullId, "");
-                                        var uri = UriFactory.CreateDocumentUri("access", "Organisations", child.Id);
-                                        await client.UpsertDocumentAsync(uri, child, new RequestOptions
+                                        await client.UpsertDocumentAsync(orgCol, child, new RequestOptions
                                         {
                                             PartitionKey = new PartitionKey("OrganisationEntity")
                                         }, true);
@@ -335,8 +333,7 @@ namespace MarsOffice.Qeeps.Access
                                     foreach (var child in toRename)
                                     {
                                         child.FullOrganisationId = child.FullOrganisationId.Replace(groupEntity.FullId, "");
-                                        var uri = UriFactory.CreateDocumentUri("access", "OrganisationAccesses", child.Id);
-                                        await client.UpsertDocumentAsync(uri, child, new RequestOptions
+                                        await client.UpsertDocumentAsync(orgAccessesCol, child, new RequestOptions
                                         {
                                             PartitionKey = new PartitionKey("OrganisationAccessEntity")
                                         }, true);
@@ -357,8 +354,7 @@ namespace MarsOffice.Qeeps.Access
                                     foreach (var child in toRename)
                                     {
                                         child.FullId = $"{groupEntity.FullId}{child.FullId}";
-                                        var uri = UriFactory.CreateDocumentUri("access", "Organisations", child.Id);
-                                        await client.UpsertDocumentAsync(uri, child, new RequestOptions
+                                        await client.UpsertDocumentAsync(orgCol, child, new RequestOptions
                                         {
                                             PartitionKey = new PartitionKey("OrganisationEntity")
                                         }, true);
@@ -377,8 +373,7 @@ namespace MarsOffice.Qeeps.Access
                                     foreach (var child in toRename)
                                     {
                                         child.FullOrganisationId = $"{groupEntity.FullId}{child.FullOrganisationId}";
-                                        var uri = UriFactory.CreateDocumentUri("access", "OrganisationAccesses", child.Id);
-                                        await client.UpsertDocumentAsync(uri, child, new RequestOptions
+                                        await client.UpsertDocumentAsync(orgAccessesCol, child, new RequestOptions
                                         {
                                             PartitionKey = new PartitionKey("OrganisationAccessEntity")
                                         }, true);
