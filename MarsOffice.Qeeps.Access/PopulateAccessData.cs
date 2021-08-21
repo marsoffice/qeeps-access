@@ -391,8 +391,6 @@ namespace MarsOffice.Qeeps.Access
                 lastDeltaRequest = response.NextPageRequest;
             }
 
-
-
             // PART 3 - Group User Members
             lastDeltaRequest = _graphClient
                 .Groups.Delta()

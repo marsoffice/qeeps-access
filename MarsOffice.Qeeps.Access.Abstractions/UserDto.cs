@@ -5,5 +5,6 @@ namespace MarsOffice.Qeeps.Access.Abstractions
         public string Id {get;set;}
         public string Name {get;set;}
         public string Email {get;set;}
+        public UserPreferencesDto UserPreferences {get;set;}
     }
 }

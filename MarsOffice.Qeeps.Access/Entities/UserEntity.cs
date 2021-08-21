@@ -9,5 +9,6 @@ namespace MarsOffice.Qeeps.Access.Entities
         public string Name { get; set; }
         public string Email { get; set; }
         public string Partition {get;set;} = "UserEntity";
+        public UserPreferencesEntity UserPreferences {get;set;}
     }
 }
