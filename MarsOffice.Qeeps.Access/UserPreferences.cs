@@ -130,8 +130,8 @@ namespace MarsOffice.Qeeps.Access
             var entity = _mapper.Map<UserPreferencesEntity>(payload);
 
             existingUser.UserPreferences = entity;
-
-            await client.UpsertDocumentAsync(docId, existingUser, new RequestOptions {
+            var collection = UriFactory.CreateDocumentCollectionUri("access", "Users");
+            await client.UpsertDocumentAsync(collection, existingUser, new RequestOptions {
                 PartitionKey = new PartitionKey("UserEntity")
             }, true);
 
