@@ -147,10 +147,17 @@ namespace MarsOffice.Qeeps.Access
                     var userUri = UriFactory.CreateDocumentUri("access", "Users", user.Id);
                     if (user.AdditionalData != null && user.AdditionalData.ContainsKey("@removed"))
                     {
-                        await client.DeleteDocumentAsync(userUri, new RequestOptions
+                        try
                         {
-                            PartitionKey = new PartitionKey("UserEntity"),
-                        });
+                            await client.DeleteDocumentAsync(userUri, new RequestOptions
+                            {
+                                PartitionKey = new PartitionKey("UserEntity"),
+                            });
+                        }
+                        catch (Exception)
+                        {
+
+                        }
 
                         var allAccessesToDeleteQuery = client.CreateDocumentQuery<OrganisationAccessEntity>(orgAccessesCollection, new FeedOptions
                         {
