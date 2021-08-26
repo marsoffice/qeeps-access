@@ -179,10 +179,15 @@ namespace MarsOffice.Qeeps.Access
                     if (g.AdditionalData != null && g.AdditionalData.ContainsKey("@removed"))
                     {
                         var docUri = UriFactory.CreateDocumentUri("access", "Organisations", g.Id);
-                        await client.DeleteDocumentAsync(docUri, new RequestOptions
+
+                        try
                         {
-                            PartitionKey = new PartitionKey("OrganisationEntity")
-                        });
+                            await client.DeleteDocumentAsync(docUri, new RequestOptions
+                            {
+                                PartitionKey = new PartitionKey("OrganisationEntity")
+                            });
+                        }
+                        catch (Exception) { }
 
                         var docsToChangeParentQuery = client.CreateDocumentQuery<OrganisationEntity>(orgCol, new FeedOptions
                         {
@@ -215,10 +220,17 @@ namespace MarsOffice.Qeeps.Access
                             foreach (var d in docs)
                             {
                                 var dUri = UriFactory.CreateDocumentUri("access", "OrganisationAccesses", d.Id);
-                                await client.DeleteDocumentAsync(dUri, new RequestOptions
+                                try
                                 {
-                                    PartitionKey = new PartitionKey("OrganisationAccessEntity")
-                                });
+                                    await client.DeleteDocumentAsync(dUri, new RequestOptions
+                                    {
+                                        PartitionKey = new PartitionKey("OrganisationAccessEntity")
+                                    });
+                                }
+                                catch (Exception)
+                                {
+
+                                }
                             }
                         }
                         continue;
@@ -432,10 +444,14 @@ namespace MarsOffice.Qeeps.Access
                             if (jObj.ContainsKey("@removed"))
                             {
                                 var accessDocUri = UriFactory.CreateDocumentUri("access", "OrganisationAccesses", g.Id + "_" + memberId);
-                                await client.DeleteDocumentAsync(accessDocUri, new RequestOptions
+                                try
                                 {
-                                    PartitionKey = new PartitionKey("OrganisationAccessEntity")
-                                });
+                                    await client.DeleteDocumentAsync(accessDocUri, new RequestOptions
+                                    {
+                                        PartitionKey = new PartitionKey("OrganisationAccessEntity")
+                                    });
+                                }
+                                catch (Exception) { }
                             }
                             else
                             {
