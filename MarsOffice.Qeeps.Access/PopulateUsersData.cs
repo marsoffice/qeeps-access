@@ -33,6 +33,10 @@ namespace MarsOffice.Qeeps.Access
         [CosmosDB(ConnectionStringSetting = "cdbconnectionstring")] DocumentClient client
         )
         {
+            if (_config["ismain"] != "true")
+            {
+                return;
+            }
 #if DEBUG
             var db = new Database
             {
