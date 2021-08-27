@@ -144,6 +144,8 @@ jobs:
         run: |
           mkdir -p ./sonar/scanner
           dotnet tool update dotnet-sonarscanner --tool-path ./.sonar/scanner
+        env:
+          NUGET_AUTH_TOKEN: '%NUGET_AUTH_TOKEN%'
 
       - name: dotnet publish
         run: |
