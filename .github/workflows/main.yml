@@ -143,9 +143,7 @@ jobs:
         if: steps.cache-sonar-scanner.outputs.cache-hit != 'true'
         run: |
           mkdir -p ./sonar/scanner
-          dotnet tool update dotnet-sonarscanner --tool-path ./.sonar/scanner --ignore-failed-sources
-        env:
-          NUGET_AUTH_TOKEN: '%NUGET_AUTH_TOKEN%'
+          dotnet tool update dotnet-sonarscanner --tool-path ./.sonar/scanner --ignore-failed-sources --add-source https://api.nuget.org/v3/index.json
 
       - name: dotnet publish
         run: |
