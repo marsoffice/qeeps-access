@@ -1,1 +1,2 @@
-# qeeps-access-service
+# qeeps-access-service  
+[![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=marsoffice_qeeps-access&metric=alert_status)](https://sonarcloud.io/dashboard?id=marsoffice_qeeps-access)
