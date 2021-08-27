@@ -27,7 +27,7 @@ namespace MarsOffice.Qeeps.Access
         }
 
         [FunctionName("PopulateUsersData")]
-        public async Task Run([TimerTrigger("0 */15 * * * *", RunOnStartup = true)] TimerInfo timerInfo,
+        public async Task Run([TimerTrigger("0 */15 * * * *", RunOnStartup = false)] TimerInfo timerInfo,
         [Blob("graph-api/delta_users.json", FileAccess.Read)] Stream deltaFile,
         [Blob("graph-api/delta_users.json", FileAccess.Write)] Stream deltaFileWrite,
         [CosmosDB(ConnectionStringSetting = "cdbconnectionstring")] DocumentClient client
@@ -117,7 +117,7 @@ namespace MarsOffice.Qeeps.Access
                     {
                         Id = u.Id,
                         Name = u.DisplayName,
-                        Email = u.UserPrincipalName
+                        Email = u.Mail
                     };
                     await client.UpsertDocumentAsync(usersCollectionUri, newEntity, new RequestOptions
                     {
@@ -197,14 +197,14 @@ namespace MarsOffice.Qeeps.Access
 
                         if (existingUser != null)
                         {
-                            existingUser.Email = user.UserPrincipalName;
+                            existingUser.Email = user.Mail;
                             existingUser.Name = user.DisplayName;
                         }
                         else
                         {
                             existingUser = new UserEntity
                             {
-                                Email = user.UserPrincipalName,
+                                Email = user.Mail,
                                 Name = user.DisplayName,
                                 Id = user.Id
                             };
