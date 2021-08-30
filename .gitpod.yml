@@ -1,1 +1,16 @@
-image: gitpod/workspace-dotnet-lts
+image:
+  file: .gitpod.Dockerfile
+vscode:
+  extensions:
+    - muhammad-sammy.csharp
+tasks:
+  - init: dotnet restore --interactive --ignore-failed-sources -s "https://nuget.pkg.github.com/marsoffice/index.json"
+    command: yarn build
+    env:
+      DOTNET_ENVIRONMENT: Development
+      ASPNETCORE_ENVIRONMENT: Development
+      AZURE_FUNCTIONS_ENVIRONMENT: Development
+
+ports:
+  - port: 7000
+    onOpen: ignore
