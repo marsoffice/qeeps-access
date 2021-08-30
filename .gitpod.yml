@@ -2,8 +2,8 @@ image:
   file: .gitpod.Dockerfile
 
 tasks:
-  - init: dotnet restore --ignore-failed-sources -s https://nuget.pkg.github.com/marsoffice/index.json -s https://api.nuget.org/v3/index.json
-    command: dotnet build -c Debug
+  - init: dotnet restore
+    command: dotnet build
     env:
       AZURE_FUNCTIONS_ENVIRONMENT: Development
       ASPNETCORE_ENVIRONMENT: Development
