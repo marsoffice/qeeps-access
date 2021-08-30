@@ -5,7 +5,7 @@ vscode:
     - muhammad-sammy.csharp
 tasks:
   - init: dotnet restore --interactive --ignore-failed-sources -s "https://nuget.pkg.github.com/marsoffice/index.json"
-    command: yarn build
+    command: dotnet build -c Debug
     env:
       DOTNET_ENVIRONMENT: Development
       ASPNETCORE_ENVIRONMENT: Development
