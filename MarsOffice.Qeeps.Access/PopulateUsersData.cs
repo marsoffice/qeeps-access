@@ -27,7 +27,7 @@ namespace MarsOffice.Qeeps.Access
         }
 
         [FunctionName("PopulateUsersData")]
-        public async Task Run([TimerTrigger("0 */15 * * * *", RunOnStartup = false)] TimerInfo timerInfo,
+        public async Task Run([TimerTrigger("%cron%", RunOnStartup = false)] TimerInfo timerInfo,
         [Blob("graph-api/delta_users.json", FileAccess.Read)] Stream deltaFile,
         [Blob("graph-api/delta_users.json", FileAccess.Write)] Stream deltaFileWrite,
         [CosmosDB(ConnectionStringSetting = "cdbconnectionstring")] DocumentClient client
