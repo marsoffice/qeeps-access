@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFramework>netcoreapp3.1</TargetFramework>
-    <AzureFunctionsVersion>v3</AzureFunctionsVersion>
+    <TargetFramework>net6.0</TargetFramework>
+    <AzureFunctionsVersion>v4</AzureFunctionsVersion>
     <RootNamespace>MarsOffice.Qeeps.Access</RootNamespace>
     <_FunctionsSkipCleanOutput>true</_FunctionsSkipCleanOutput>
     <IsPackable>false</IsPackable>
@@ -13,16 +13,17 @@
     <PackageReference Include="AutoMapper" Version="10.1.1" />
     <PackageReference Include="AutoMapper.Extensions.Microsoft.DependencyInjection" Version="8.1.1" />
     <PackageReference Include="MarsOffice.Qeeps.Microfunction" Version="1.2.0-dev.13" />
+    <PackageReference Include="Microsoft.AspNetCore.SignalR.Protocols.NewtonsoftJson" Version="6.0.0" />
     <PackageReference Include="Microsoft.Azure.Functions.Extensions" Version="1.1.0" />
     <PackageReference Include="Microsoft.Azure.WebJobs.Extensions.CosmosDB" Version="3.0.10" />
-    <PackageReference Include="Microsoft.Azure.WebJobs.Extensions.SignalRService" Version="1.5.0" />
-    <PackageReference Include="Microsoft.Azure.WebJobs.Extensions.Storage" Version="4.0.4" />
-    <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="3.1.17" />
-    <PackageReference Include="Microsoft.Identity.Web.MicrosoftGraph" Version="1.15.2" />
-    <PackageReference Include="Microsoft.Azure.WebJobs.Extensions.ServiceBus" Version="4.3.0" />
-    <PackageReference Include="FluentValidation" Version="10.3.0" />
-    <PackageReference Include="FluentValidation.DependencyInjectionExtensions" Version="10.3.0" />
-    <PackageReference Include="Microsoft.NET.Sdk.Functions" Version="3.0.13" />
+    <PackageReference Include="Microsoft.Azure.WebJobs.Extensions.SignalRService" Version="1.6.0" />
+    <PackageReference Include="Microsoft.Azure.WebJobs.Extensions.Storage" Version="5.0.0" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="6.0.0" />
+    <PackageReference Include="Microsoft.Identity.Web.MicrosoftGraph" Version="1.21.0" />
+    <PackageReference Include="Microsoft.Azure.WebJobs.Extensions.ServiceBus" Version="5.1.0" />
+    <PackageReference Include="FluentValidation" Version="10.3.4" />
+    <PackageReference Include="FluentValidation.DependencyInjectionExtensions" Version="10.3.4" />
+    <PackageReference Include="Microsoft.NET.Sdk.Functions" Version="4.0.1" />
   </ItemGroup>
   <ItemGroup>
     <None Update="host.json">
