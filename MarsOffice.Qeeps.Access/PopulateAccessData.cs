@@ -29,8 +29,8 @@ namespace MarsOffice.Qeeps.Access
 
         [FunctionName("PopulateAccessData")]
         public async Task Run([TimerTrigger("%cron%", RunOnStartup = true)] TimerInfo timerInfo,
-        [Blob("graph-api/delta_access.json", FileAccess.Read)] Stream deltaFile,
-        [Blob("graph-api/delta_access.json", FileAccess.Write)] Stream deltaFileWrite,
+        [Blob("graph-api/delta_access.json", FileAccess.Read)] string deltaFile,
+        [Blob("graph-api/delta_access.json", FileAccess.Write)] TextWriter deltaFileWriter,
         [CosmosDB(ConnectionStringSetting = "cdbconnectionstring")] DocumentClient client
         )
         {
@@ -76,11 +76,9 @@ namespace MarsOffice.Qeeps.Access
 
             var lastDelta = "latest";
 
-            if (!isDbEmpty && deltaFile != null && deltaFile.CanRead)
+            if (!isDbEmpty && !string.IsNullOrEmpty(deltaFile))
             {
-                using var streamReader = new StreamReader(deltaFile);
-                var json = await streamReader.ReadToEndAsync();
-                var deserialized = JsonConvert.DeserializeObject<DeltaFile>(json, new JsonSerializerSettings
+                var deserialized = JsonConvert.DeserializeObject<DeltaFile>(deltaFile, new JsonSerializerSettings
                 {
                     ContractResolver = new CamelCasePropertyNamesContractResolver()
                 });
@@ -93,11 +91,11 @@ namespace MarsOffice.Qeeps.Access
             if (isDbEmpty)
             {
                 await PopulateAllForGroupRecursively(client, _config["adgroupid"]);
-                await PopulateDelta(client, deltaFileWrite, lastDelta);
+                await PopulateDelta(client, deltaFileWriter, lastDelta);
             }
             else
             {
-                await PopulateDelta(client, deltaFileWrite, lastDelta);
+                await PopulateDelta(client, deltaFileWriter, lastDelta);
             }
         }
 
@@ -155,7 +153,7 @@ namespace MarsOffice.Qeeps.Access
             }
         }
 
-        private async Task PopulateDelta(DocumentClient client, Stream stream, string lastDelta)
+        private async Task PopulateDelta(DocumentClient client, TextWriter stream, string lastDelta)
         {
             var orgCol = UriFactory.CreateDocumentCollectionUri("access", "Organisations");
             var usersCol = UriFactory.CreateDocumentCollectionUri("access", "Users");
@@ -484,8 +482,7 @@ namespace MarsOffice.Qeeps.Access
             {
                 ContractResolver = new CamelCasePropertyNamesContractResolver()
             });
-            using var streamWriter = new StreamWriter(stream);
-            await streamWriter.WriteAsync(deltaFileJson);
+            await stream.WriteAsync(deltaFileJson);
         }
     }
 }
