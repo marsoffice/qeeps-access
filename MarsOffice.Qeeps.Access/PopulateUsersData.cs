@@ -147,7 +147,7 @@ namespace MarsOffice.Qeeps.Access
                 var response = await lastDeltaRequest.GetAsync();
                 if (nextDelta == null)
                 {
-                    nextDelta = response.AdditionalData["@odata.deltaLink"] as string;
+                    nextDelta = response.AdditionalData["@odata.deltaLink"].ToString();
                 }
                 foreach (var user in response.CurrentPage)
                 {
