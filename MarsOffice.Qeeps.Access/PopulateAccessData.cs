@@ -84,7 +84,10 @@ namespace MarsOffice.Qeeps.Access
                 {
                     ContractResolver = new CamelCasePropertyNamesContractResolver()
                 });
-                lastDelta = deserialized.Delta;
+                if (lastDelta != null)
+                {
+                    lastDelta = deserialized.Delta;
+                }
             }
 
             if (isDbEmpty)
