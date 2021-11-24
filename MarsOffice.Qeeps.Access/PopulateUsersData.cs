@@ -30,13 +30,14 @@ namespace MarsOffice.Qeeps.Access
         public async Task Run([TimerTrigger("%cron%", RunOnStartup = true)] TimerInfo timerInfo,
         [Blob("graph-api/delta_users.json", FileAccess.Read)] string deltaFile,
         [Blob("graph-api/delta_users.json", FileAccess.Write)] TextWriter deltaFileWriter,
-        [CosmosDB(ConnectionStringSetting = "cdbconnectionstring")] DocumentClient client
+        [CosmosDB(ConnectionStringSetting = "cdbconnectionstring", PreferredLocations = "%location%")] DocumentClient client
         )
         {
             if (_config["ismain"] != "true")
             {
                 return;
             }
+            client.ConnectionPolicy.UseMultipleWriteLocations = _config.GetValue<bool>("multimasterdatabase");
 #if DEBUG
             var db = new Database
             {

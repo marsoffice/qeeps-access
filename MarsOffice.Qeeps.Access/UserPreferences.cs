@@ -12,6 +12,7 @@ using Microsoft.Azure.Documents;
 using Microsoft.Azure.Documents.Client;
 using Microsoft.Azure.WebJobs;
 using Microsoft.Azure.WebJobs.Extensions.Http;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
@@ -21,20 +22,24 @@ namespace MarsOffice.Qeeps.Access
     public class UserPreferences
     {
         private readonly IMapper _mapper;
-        public UserPreferences(IMapper mapper)
+        private readonly IConfiguration _config;
+
+        public UserPreferences(IMapper mapper, IConfiguration config)
         {
+            _config = config;
             _mapper = mapper;
         }
 
         [FunctionName("GetUserPreferences")]
         public async Task<IActionResult> GetUserPreferences(
             [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "api/access/userPreferences")] HttpRequest req,
-            [CosmosDB(ConnectionStringSetting = "cdbconnectionstring")] DocumentClient client,
+            [CosmosDB(ConnectionStringSetting = "cdbconnectionstring", PreferredLocations = "%location%")] DocumentClient client,
             ILogger log
             )
         {
             try
             {
+                client.ConnectionPolicy.UseMultipleWriteLocations = _config.GetValue<bool>("multimasterdatabase");
 #if DEBUG
                 var db = new Database
                 {
@@ -86,12 +91,13 @@ namespace MarsOffice.Qeeps.Access
         public async Task<IActionResult> SaveUserPreferences(
             [HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = "api/access/userPreferences")] HttpRequest req,
             [CosmosDB(
-                ConnectionStringSetting = "cdbconnectionstring")] DocumentClient client,
+                ConnectionStringSetting = "cdbconnectionstring", PreferredLocations = "%location%")] DocumentClient client,
             ILogger log
             )
         {
             try
             {
+                client.ConnectionPolicy.UseMultipleWriteLocations = _config.GetValue<bool>("multimasterdatabase");
 #if DEBUG
                 var db = new Database
                 {

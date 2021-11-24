@@ -15,6 +15,7 @@ using Microsoft.Azure.Documents.Client;
 using Microsoft.Azure.Documents.Linq;
 using Microsoft.Azure.WebJobs;
 using Microsoft.Azure.WebJobs.Extensions.Http;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 
@@ -23,9 +24,12 @@ namespace MarsOffice.Qeeps.Access
     public class Users
     {
         private readonly IMapper _mapper;
-        public Users(IMapper mapper)
+        private readonly IConfiguration _config;
+
+        public Users(IMapper mapper, IConfiguration config)
         {
             _mapper = mapper;
+            _config = config;
         }
 
         [FunctionName("GetUsers")]
@@ -33,12 +37,13 @@ namespace MarsOffice.Qeeps.Access
             [HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = "api/access/users")] HttpRequest req,
             ClaimsPrincipal principal,
             [CosmosDB(
-                ConnectionStringSetting = "cdbconnectionstring")] DocumentClient client,
+                ConnectionStringSetting = "cdbconnectionstring", PreferredLocations = "%location%")] DocumentClient client,
             ILogger log
             )
         {
             try
             {
+                client.ConnectionPolicy.UseMultipleWriteLocations = _config.GetValue<bool>("multimasterdatabase");
 #if DEBUG
                 var db = new Database
                 {
@@ -99,12 +104,13 @@ namespace MarsOffice.Qeeps.Access
             [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "api/access/user/{id}")] HttpRequest req,
             ClaimsPrincipal principal,
             [CosmosDB(
-                ConnectionStringSetting = "cdbconnectionstring")] DocumentClient client,
+                ConnectionStringSetting = "cdbconnectionstring", PreferredLocations = "%location%")] DocumentClient client,
             ILogger log
             )
         {
             try
             {
+                client.ConnectionPolicy.UseMultipleWriteLocations = _config.GetValue<bool>("multimasterdatabase");
 #if DEBUG
                 var db = new Database
                 {
