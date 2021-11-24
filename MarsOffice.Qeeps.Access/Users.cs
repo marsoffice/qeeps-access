@@ -165,5 +165,67 @@ namespace MarsOffice.Qeeps.Access
                 return new BadRequestObjectResult(Errors.Extract(e));
             }
         }
+
+        [FunctionName("MyProfile")]
+        public async Task<IActionResult> MyProfile(
+            [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "api/access/myProfile")] HttpRequest req,
+            [CosmosDB(
+                ConnectionStringSetting = "cdbconnectionstring", PreferredLocations = "%location%")] DocumentClient client,
+            ILogger log
+            )
+        {
+            try
+            {
+                client.ConnectionPolicy.UseMultipleWriteLocations = _config.GetValue<bool>("multimasterdatabase");
+#if DEBUG
+                var db = new Database
+                {
+                    Id = "access"
+                };
+                await client.CreateDatabaseIfNotExistsAsync(db);
+
+
+                var col = new DocumentCollection
+                {
+                    Id = "Users",
+                    PartitionKey = new PartitionKeyDefinition
+                    {
+                        Version = PartitionKeyDefinitionVersion.V1,
+                        Paths = new System.Collections.ObjectModel.Collection<string>(new List<string>() { "/Partition" })
+                    }
+                };
+                await client.CreateDocumentCollectionIfNotExistsAsync(UriFactory.CreateDatabaseUri("access"), col);
+#endif
+
+                var principal = QeepsPrincipal.Parse(req);
+                var id = principal.FindFirstValue("id");
+                UserEntity found = null;
+                try
+                {
+                    var uri = UriFactory.CreateDocumentUri("access", "Users", id);
+                    found = (
+                        await client.ReadDocumentAsync<UserEntity>(uri, new RequestOptions
+                        {
+                            PartitionKey = new PartitionKey("UserEntity")
+                        })
+                    )?.Document;
+                }
+                catch (Exception) { }
+
+                if (found == null)
+                {
+                    return new StatusCodeResult(404);
+                }
+
+                return new OkObjectResult(
+                    _mapper.Map<UserDto>(found)
+                );
+            }
+            catch (Exception e)
+            {
+                log.LogError(e, "Exception occured in function");
+                return new BadRequestObjectResult(Errors.Extract(e));
+            }
+        }
     }
 }

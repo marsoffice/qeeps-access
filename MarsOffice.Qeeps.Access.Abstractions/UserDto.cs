@@ -2,9 +2,10 @@ namespace MarsOffice.Qeeps.Access.Abstractions
 {
     public class UserDto
     {
-        public string Id {get;set;}
-        public string Name {get;set;}
-        public string Email {get;set;}
-        public UserPreferencesDto UserPreferences {get;set;}
+        public string Id { get; set; }
+        public string Name { get; set; }
+        public string Email { get; set; }
+        public bool HasSignedContract { get; set; }
+        public UserPreferencesDto UserPreferences { get; set; }
     }
 }
