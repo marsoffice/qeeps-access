@@ -202,13 +202,20 @@ namespace MarsOffice.Qeeps.Access
                 UserEntity found = null;
                 try
                 {
-                    var uri = UriFactory.CreateDocumentUri("access", "Users", id);
-                    found = (
-                        await client.ReadDocumentAsync<UserEntity>(uri, new RequestOptions
-                        {
-                            PartitionKey = new PartitionKey("UserEntity")
-                        })
-                    )?.Document;
+                    var collection = UriFactory.CreateDocumentCollectionUri("access", "Users");
+                    var entityQuery = client.CreateDocumentQuery<UserEntity>(collection, new FeedOptions
+                    {
+                        PartitionKey = new PartitionKey("UserEntity")
+                    }).Where(x => x.Id == id)
+                    .Select(x => new UserEntity
+                    {
+                        Email = x.Email,
+                        HasSignedContract = x.HasSignedContract,
+                        Id = x.Id,
+                        Name = x.Name
+                    }).AsDocumentQuery();
+                    var response = await entityQuery.ExecuteNextAsync<UserEntity>();
+                    found = response.FirstOrDefault();
                 }
                 catch (Exception) { }
 
@@ -216,7 +223,7 @@ namespace MarsOffice.Qeeps.Access
                 {
                     return new StatusCodeResult(404);
                 }
-
+                found.UserPreferences = null;
                 return new OkObjectResult(
                     _mapper.Map<UserDto>(found)
                 );
