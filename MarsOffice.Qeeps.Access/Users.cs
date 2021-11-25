@@ -18,6 +18,7 @@ using Microsoft.Azure.WebJobs.Extensions.Http;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Serialization;
 
 namespace MarsOffice.Qeeps.Access
 {
@@ -227,6 +228,83 @@ namespace MarsOffice.Qeeps.Access
                 return new OkObjectResult(
                     _mapper.Map<UserDto>(found)
                 );
+            }
+            catch (Exception e)
+            {
+                log.LogError(e, "Exception occured in function");
+                return new BadRequestObjectResult(Errors.Extract(e));
+            }
+        }
+
+        [FunctionName("UpdateMyProfile")]
+        public async Task<IActionResult> UpdateMyProfile(
+            [HttpTrigger(AuthorizationLevel.Anonymous, "put", Route = "api/access/myProfile")] HttpRequest req,
+            [CosmosDB(
+                ConnectionStringSetting = "cdbconnectionstring", PreferredLocations = "%location%")] DocumentClient client,
+            ILogger log
+            )
+        {
+            try
+            {
+                client.ConnectionPolicy.UseMultipleWriteLocations = _config.GetValue<bool>("multimasterdatabase");
+#if DEBUG
+                var db = new Database
+                {
+                    Id = "access"
+                };
+                await client.CreateDatabaseIfNotExistsAsync(db);
+
+
+                var col = new DocumentCollection
+                {
+                    Id = "Users",
+                    PartitionKey = new PartitionKeyDefinition
+                    {
+                        Version = PartitionKeyDefinitionVersion.V1,
+                        Paths = new System.Collections.ObjectModel.Collection<string>(new List<string>() { "/Partition" })
+                    }
+                };
+                await client.CreateDocumentCollectionIfNotExistsAsync(UriFactory.CreateDatabaseUri("access"), col);
+#endif
+
+                var principal = QeepsPrincipal.Parse(req);
+                var userId = principal.FindFirst("id").Value;
+
+                var docId = UriFactory.CreateDocumentUri("access", "Users", userId);
+
+                UserEntity existingUser = null;
+                try
+                {
+                    existingUser = (await client.ReadDocumentAsync<UserEntity>(docId, new RequestOptions
+                    {
+                        PartitionKey = new PartitionKey("UserEntity")
+                    }))?.Document;
+                }
+                catch (Exception) { }
+
+                if (existingUser == null)
+                {
+                    return new StatusCodeResult(400);
+                }
+
+                var json = string.Empty;
+                using (var streamReader = new StreamReader(req.Body))
+                {
+                    json = await streamReader.ReadToEndAsync();
+                }
+                var payload = JsonConvert.DeserializeObject<UserDto>(json, new JsonSerializerSettings
+                {
+                    ContractResolver = new CamelCasePropertyNamesContractResolver()
+                });
+
+                existingUser.HasSignedContract = payload.HasSignedContract;
+                var collection = UriFactory.CreateDocumentCollectionUri("access", "Users");
+                await client.UpsertDocumentAsync(collection, existingUser, new RequestOptions
+                {
+                    PartitionKey = new PartitionKey("UserEntity")
+                }, true);
+
+                return new OkResult();
             }
             catch (Exception e)
             {
