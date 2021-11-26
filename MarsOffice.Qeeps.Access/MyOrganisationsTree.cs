@@ -165,22 +165,27 @@ namespace MarsOffice.Qeeps.Access
                 {
                     entities.AddRange(await foundAccessesQuery.ExecuteNextAsync<OrganisationAccessEntity>());
                 }
-                var orgIds = entities.Select(x => x.OrganisationId).Distinct().ToList();
-                var orgsCollection = UriFactory.CreateDocumentCollectionUri("access", "Organisations");
-                var foundOrgsQuery = client.CreateDocumentQuery<OrganisationEntity>(orgsCollection, new FeedOptions
-                {
-                    PartitionKey = new PartitionKey("OrganisationEntity")
-                })
-                .Where(x => orgIds.Contains(x.Id))
-                .AsDocumentQuery();
+
 
                 var dtos = new List<OrganisationDto>();
+                var orgIds = entities.Select(x => x.OrganisationId).Distinct().ToList();
+                var orgsCollection = UriFactory.CreateDocumentCollectionUri("access", "Organisations");
 
-                while (foundOrgsQuery.HasMoreResults)
+                foreach (var orgId in orgIds)
                 {
-                    dtos.AddRange(_mapper.Map<IEnumerable<OrganisationDto>>(await foundOrgsQuery.ExecuteNextAsync<OrganisationEntity>()));
-                }
+                    var foundOrgsQuery = client.CreateDocumentQuery<OrganisationEntity>(orgsCollection, new FeedOptions
+                    {
+                        PartitionKey = new PartitionKey("OrganisationEntity")
+                    })
+                    .Where(x => x.FullId.Contains("_" + orgId))
+                    .AsDocumentQuery();
 
+                    while (foundOrgsQuery.HasMoreResults)
+                    {
+                        dtos.AddRange(_mapper.Map<IEnumerable<OrganisationDto>>(await foundOrgsQuery.ExecuteNextAsync<OrganisationEntity>()));
+                    }
+                }
+                dtos = dtos.DistinctBy(x => x.FullId).ToList();
                 return new OkObjectResult(dtos);
             }
             catch (Exception e)
