@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Text.Json;
 using System.Threading.Tasks;
 using MarsOffice.Qeeps.Access.Entities;
 using Microsoft.Azure.Documents;
@@ -309,16 +310,17 @@ namespace MarsOffice.Qeeps.Access
                             continue;
                         }
 
-                        var memberChanges = g.AdditionalData["members@delta"] as JArray;
-                        foreach (JObject jObj in memberChanges)
+                        var memberChanges = (JsonElement)g.AdditionalData["members@delta"];
+                        for (var i = 0; i < memberChanges.GetArrayLength(); i++)
                         {
-                            if (jObj.GetValue("@odata.type").ToString() != "#microsoft.graph.group")
+                            var jObj = memberChanges[i];
+                            if (jObj.GetProperty("@odata.type").GetString() != "#microsoft.graph.group")
                             {
                                 continue;
                             }
-                            var memberId = jObj.GetValue("id").ToString();
+                            var memberId = jObj.GetProperty("id").GetString();
 
-                            if (jObj.ContainsKey("@removed"))
+                            if (jObj.TryGetProperty("@removed", out _))
                             {
                                 var docsToRenameQuery = client.CreateDocumentQuery<OrganisationEntity>(orgCol, new FeedOptions
                                 {
@@ -434,16 +436,17 @@ namespace MarsOffice.Qeeps.Access
                             continue;
                         }
 
-                        var memberChanges = g.AdditionalData["members@delta"] as JArray;
-                        foreach (JObject jObj in memberChanges)
+                        var memberChanges = (JsonElement)g.AdditionalData["members@delta"];
+                        for (var i = 0; i < memberChanges.GetArrayLength(); i++)
                         {
-                            if (jObj.GetValue("@odata.type").ToString() != "#microsoft.graph.user")
+                            var jObj = memberChanges[i];
+                            if (jObj.GetProperty("@odata.type").GetString() != "#microsoft.graph.user")
                             {
                                 continue;
                             }
-                            var memberId = jObj.GetValue("id").ToString();
+                            var memberId = jObj.GetProperty("id").GetString();
 
-                            if (jObj.ContainsKey("@removed"))
+                            if (jObj.TryGetProperty("@removed", out _))
                             {
                                 var accessDocUri = UriFactory.CreateDocumentUri("access", "OrganisationAccesses", g.Id + "_" + memberId);
                                 try
