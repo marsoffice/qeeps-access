@@ -244,13 +244,12 @@ namespace MarsOffice.Qeeps.Access
                 }
                 var uid = req.RouteValues["userId"].ToString();
 
-                var groupIds = principal.FindAll(x => x.Type == "groups").Select(x => x.Value).Distinct().ToList();
                 var orgAccessesCollection = UriFactory.CreateDocumentCollectionUri("access", "OrganisationAccesses");
                 var foundAccessesQuery = client.CreateDocumentQuery<OrganisationAccessEntity>(orgAccessesCollection, new FeedOptions
                 {
                     PartitionKey = new PartitionKey("OrganisationAccessEntity")
                 })
-                .Where(x => x.UserId == uid && groupIds.Contains(x.OrganisationId))
+                .Where(x => x.UserId == uid)
                 .AsDocumentQuery();
 
                 var entities = new List<OrganisationAccessEntity>();
