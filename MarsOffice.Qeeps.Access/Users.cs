@@ -58,7 +58,7 @@ namespace MarsOffice.Qeeps.Access
                     Id = "Users",
                     PartitionKey = new PartitionKeyDefinition
                     {
-                        Version = PartitionKeyDefinitionVersion.V1,
+                        Version = PartitionKeyDefinitionVersion.V2,
                         Paths = new System.Collections.ObjectModel.Collection<string>(new List<string>() { "/Partition" })
                     }
                 };
@@ -125,7 +125,7 @@ namespace MarsOffice.Qeeps.Access
                     Id = "Users",
                     PartitionKey = new PartitionKeyDefinition
                     {
-                        Version = PartitionKeyDefinitionVersion.V1,
+                        Version = PartitionKeyDefinitionVersion.V2,
                         Paths = new System.Collections.ObjectModel.Collection<string>(new List<string>() { "/Partition" })
                     }
                 };
@@ -191,7 +191,7 @@ namespace MarsOffice.Qeeps.Access
                     Id = "Users",
                     PartitionKey = new PartitionKeyDefinition
                     {
-                        Version = PartitionKeyDefinitionVersion.V1,
+                        Version = PartitionKeyDefinitionVersion.V2,
                         Paths = new System.Collections.ObjectModel.Collection<string>(new List<string>() { "/Partition" })
                     }
                 };
@@ -260,7 +260,7 @@ namespace MarsOffice.Qeeps.Access
                     Id = "Users",
                     PartitionKey = new PartitionKeyDefinition
                     {
-                        Version = PartitionKeyDefinitionVersion.V1,
+                        Version = PartitionKeyDefinitionVersion.V2,
                         Paths = new System.Collections.ObjectModel.Collection<string>(new List<string>() { "/Partition" })
                     }
                 };

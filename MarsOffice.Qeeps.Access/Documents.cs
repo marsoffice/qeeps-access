@@ -53,7 +53,7 @@ namespace MarsOffice.Qeeps.Access
                     Id = "Documents",
                     PartitionKey = new PartitionKeyDefinition
                     {
-                        Version = PartitionKeyDefinitionVersion.V1,
+                        Version = PartitionKeyDefinitionVersion.V2,
                         Paths = new System.Collections.ObjectModel.Collection<string>(new List<string>() { "/Partition" })
                     }
                 };
@@ -110,7 +110,7 @@ namespace MarsOffice.Qeeps.Access
                     Id = "Documents",
                     PartitionKey = new PartitionKeyDefinition
                     {
-                        Version = PartitionKeyDefinitionVersion.V1,
+                        Version = PartitionKeyDefinitionVersion.V2,
                         Paths = new System.Collections.ObjectModel.Collection<string>(new List<string>() { "/Partition" })
                     }
                 };
@@ -148,7 +148,8 @@ namespace MarsOffice.Qeeps.Access
 
                 if (existingDocument == null)
                 {
-                    existingDocument = new DocumentEntity {
+                    existingDocument = new DocumentEntity
+                    {
                         Id = "contract"
                     };
                 }
