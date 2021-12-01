@@ -360,7 +360,7 @@ namespace MarsOffice.Qeeps.Access
                     {
                         PartitionKey = new PartitionKey("OrganisationEntity")
                     })
-                    .Where(x => x.Id == orgId)
+                    .Where(x => x.FullId.Contains("_" + orgId))
                     .AsDocumentQuery();
 
                     while (foundOrgsQuery.HasMoreResults)
