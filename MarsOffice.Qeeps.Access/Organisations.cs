@@ -287,7 +287,7 @@ namespace MarsOffice.Qeeps.Access
             }
         }
 
-        [FunctionName("GetFullOrganisationsTreeForUser")]
+        [FunctionName("GetAccessibleOrganisationsForUser")]
         public async Task<IActionResult> GetAccessibleOrganisationsForUser(
             [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "api/access/getAccessibleOrganisations/{userId}")] HttpRequest req,
             [CosmosDB(ConnectionStringSetting = "cdbconnectionstring", PreferredLocations = "%location%")] DocumentClient client,
