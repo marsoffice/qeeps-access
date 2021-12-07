@@ -316,7 +316,7 @@ namespace MarsOffice.Qeeps.Access
 
         [FunctionName("GetUsersByOrganisationId")]
         public async Task<IActionResult> GetUserByOrganisationId(
-            [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "api/access/user/{organisationId}")] HttpRequest req,
+            [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "api/access/getUsersByOrganisationId/{organisationId}")] HttpRequest req,
             ClaimsPrincipal principal,
             [CosmosDB(
                 ConnectionStringSetting = "cdbconnectionstring", PreferredLocations = "%location%")] DocumentClient client,
