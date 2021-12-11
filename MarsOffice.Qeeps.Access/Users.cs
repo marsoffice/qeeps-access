@@ -237,9 +237,9 @@ namespace MarsOffice.Qeeps.Access
             }
         }
 
-        [FunctionName("UpdateMyProfile")]
+        [FunctionName("AcceptContract")]
         public async Task<IActionResult> UpdateMyProfile(
-            [HttpTrigger(AuthorizationLevel.Anonymous, "put", Route = "api/access/myProfile")] HttpRequest req,
+            [HttpTrigger(AuthorizationLevel.Anonymous, "put", Route = "api/access/acceptContract")] HttpRequest req,
             [CosmosDB(
                 ConnectionStringSetting = "cdbconnectionstring", PreferredLocations = "%location%")] DocumentClient client,
             ILogger log
@@ -288,17 +288,8 @@ namespace MarsOffice.Qeeps.Access
                     return new StatusCodeResult(400);
                 }
 
-                var json = string.Empty;
-                using (var streamReader = new StreamReader(req.Body))
-                {
-                    json = await streamReader.ReadToEndAsync();
-                }
-                var payload = JsonConvert.DeserializeObject<UserDto>(json, new JsonSerializerSettings
-                {
-                    ContractResolver = new CamelCasePropertyNamesContractResolver()
-                });
+                existingUser.HasSignedContract = true;
 
-                existingUser.HasSignedContract = payload.HasSignedContract;
                 var collection = UriFactory.CreateDocumentCollectionUri("access", "Users");
                 await client.UpsertDocumentAsync(collection, existingUser, new RequestOptions
                 {
