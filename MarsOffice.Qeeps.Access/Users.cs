@@ -273,6 +273,17 @@ namespace MarsOffice.Qeeps.Access
 
                 var docId = UriFactory.CreateDocumentUri("access", "Users", userId);
 
+                var json = string.Empty;
+                using (var streamReader = new StreamReader(req.Body))
+                {
+                    json = await streamReader.ReadToEndAsync();
+                }
+                var payload = JsonConvert.DeserializeObject<AcceptContractDto>(json, new JsonSerializerSettings
+                {
+                    ContractResolver = new CamelCasePropertyNamesContractResolver()
+                });
+
+
                 UserEntity existingUser = null;
                 try
                 {
