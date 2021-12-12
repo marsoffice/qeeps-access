@@ -348,7 +348,7 @@ namespace MarsOffice.Qeeps.Access
                 htmlSignedContract += $"<img src=\"{payload.SignatureImage}\" width=\"300\" />";
 
                 using var filesClient = _httpClientFactory.CreateClient("files");
-                var fileName = existingUser.Id + "_" + existingUser.Email + "_" + existingUser.Name + "_" + today.ToString() + ".html";
+                var fileName = existingUser.Id + "_" + existingUser.Email + "_" + existingUser.Name + "_" + today.ToString("s") + "Z.html";
                 var filePath = "contracts/" + fileName;
                 var fileContent = new MultipartFormDataContent();
                 var fileContentInner = new ByteArrayContent(
