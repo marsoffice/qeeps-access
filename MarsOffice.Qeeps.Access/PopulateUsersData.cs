@@ -139,7 +139,7 @@ namespace MarsOffice.Qeeps.Access
                     .ToList();
                     if (foundRoles == null || !foundRoles.Any())
                     {
-                        return;
+                        continue;
                     }
                     var newEntity = new UserEntity
                     {
