@@ -27,7 +27,13 @@ namespace MarsOffice.Qeeps.Access
         }
 
         [FunctionName("PopulateUsersData")]
-        public async Task Run([TimerTrigger("%cron%", RunOnStartup = true)] TimerInfo timerInfo,
+        public async Task Run([TimerTrigger("%cron%", RunOnStartup = 
+        #if DEBUG
+        false
+        #else
+        true
+        #endif
+        )] TimerInfo timerInfo,
         [Blob("graph-api/delta_users.json", FileAccess.Read)] string deltaFile,
         [Blob("graph-api/delta_users.json", FileAccess.Write)] TextWriter deltaFileWriter,
         [CosmosDB(ConnectionStringSetting = "cdbconnectionstring", PreferredLocations = "%location%")] DocumentClient client
@@ -127,7 +133,7 @@ namespace MarsOffice.Qeeps.Access
                 var usersResponse = await usersRequest.GetAsync();
                 foreach (var u in usersResponse)
                 {
-                    var foundRoles = u.AppRoleAssignments.Where(ara => allValidRoleIds.Contains(ara.AppRoleId.Value.ToString()))
+                    var foundRoles = u.AppRoleAssignments?.Where(ara => allValidRoleIds.Contains(ara.AppRoleId.Value.ToString()))
                     .Select(x => adApp.AppRoles.First(z => z.Id.Value.ToString() == x.AppRoleId.Value.ToString()).DisplayName)
                     .Distinct()
                     .ToList();
@@ -159,7 +165,8 @@ namespace MarsOffice.Qeeps.Access
             var lastDeltaRequest = _graphClient
                             .Users
                             .Delta()
-                            .Request();
+                            .Request()
+                            .Expand("appRoleAssignments");
 
             lastDeltaRequest.QueryOptions.Add(new QueryOption("$deltaToken", lastDelta));
             string nextDelta = null;
@@ -209,7 +216,7 @@ namespace MarsOffice.Qeeps.Access
                     }
                     else
                     {
-                        var foundRoles = user.AppRoleAssignments.Where(ara => allValidRoleIds.Contains(ara.AppRoleId.Value.ToString()))
+                        var foundRoles = user.AppRoleAssignments?.Where(ara => allValidRoleIds.Contains(ara.AppRoleId.Value.ToString()))
                             .Select(x => adApp.AppRoles.First(z => z.Id.Value.ToString() == x.AppRoleId.Value.ToString()).DisplayName)
                             .Distinct()
                             .ToList();

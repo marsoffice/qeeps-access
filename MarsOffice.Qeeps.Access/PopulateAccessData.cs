@@ -29,7 +29,13 @@ namespace MarsOffice.Qeeps.Access
         }
 
         [FunctionName("PopulateAccessData")]
-        public async Task Run([TimerTrigger("%cron%", RunOnStartup = true)] TimerInfo timerInfo,
+        public async Task Run([TimerTrigger("%cron%", RunOnStartup = 
+        #if DEBUG
+        false
+        #else
+        true
+        #endif
+        )] TimerInfo timerInfo,
         [Blob("graph-api/delta_access.json", FileAccess.Read)] string deltaFile,
         [Blob("graph-api/delta_access.json", FileAccess.Write)] TextWriter deltaFileWriter,
         [CosmosDB(ConnectionStringSetting = "cdbconnectionstring", PreferredLocations = "%location%")] DocumentClient client
