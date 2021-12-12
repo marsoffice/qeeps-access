@@ -165,8 +165,7 @@ namespace MarsOffice.Qeeps.Access
             var lastDeltaRequest = _graphClient
                             .Users
                             .Delta()
-                            .Request()
-                            .Expand("appRoleAssignments");
+                            .Request();
 
             lastDeltaRequest.QueryOptions.Add(new QueryOption("$deltaToken", lastDelta));
             string nextDelta = null;
@@ -216,6 +215,9 @@ namespace MarsOffice.Qeeps.Access
                     }
                     else
                     {
+
+                        // TODO get app roles for user
+
                         var foundRoles = user.AppRoleAssignments?.Where(ara => allValidRoleIds.Contains(ara.AppRoleId.Value.ToString()))
                             .Select(x => adApp.AppRoles.First(z => z.Id.Value.ToString() == x.AppRoleId.Value.ToString()).DisplayName)
                             .Distinct()
