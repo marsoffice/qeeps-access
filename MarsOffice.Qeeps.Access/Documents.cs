@@ -143,6 +143,11 @@ namespace MarsOffice.Qeeps.Access
                     PartitionKey = new PartitionKey("DocumentEntity")
                 }, true);
 
+                if (payload.Id == "contract")
+                {
+                    await UpdateAllUsersContractsFlag(client);
+                }
+
                 return new OkResult();
             }
             catch (Exception e)
@@ -150,6 +155,12 @@ namespace MarsOffice.Qeeps.Access
                 log.LogError(e, "Exception occured in function");
                 return new BadRequestObjectResult(Errors.Extract(e));
             }
+        }
+
+        private async Task UpdateAllUsersContractsFlag(DocumentClient client)
+        {
+            // TODO
+            await Task.CompletedTask;
         }
     }
 }
