@@ -92,7 +92,14 @@ namespace MarsOffice.Qeeps.Access
             [HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = "api/access/documents")] HttpRequest req,
             [CosmosDB(
                 ConnectionStringSetting = "cdbconnectionstring", PreferredLocations = "%location%")] DocumentClient client,
-            ILogger log
+            ILogger log,
+            [ServiceBus(
+                #if DEBUG
+                "reset-contracts-dev",
+                #else
+                "reset-contracts",
+                #endif
+                 Connection = "sbconnectionstring")] IAsyncCollector<ResetContractsRequestDto> outputResetContractsRequest
             )
         {
             try
@@ -145,7 +152,11 @@ namespace MarsOffice.Qeeps.Access
 
                 if (payload.Id == "contract")
                 {
-                    await UpdateAllUsersContractsFlag(client);
+                    await outputResetContractsRequest.AddAsync(new ResetContractsRequestDto
+                    {
+                        Reset = true
+                    });
+                    await outputResetContractsRequest.FlushAsync();
                 }
 
                 return new OkResult();
@@ -155,12 +166,6 @@ namespace MarsOffice.Qeeps.Access
                 log.LogError(e, "Exception occured in function");
                 return new BadRequestObjectResult(Errors.Extract(e));
             }
-        }
-
-        private async Task UpdateAllUsersContractsFlag(DocumentClient client)
-        {
-            // TODO
-            await Task.CompletedTask;
         }
     }
 }
