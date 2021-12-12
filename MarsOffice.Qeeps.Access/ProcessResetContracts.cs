@@ -71,9 +71,8 @@ namespace MarsOffice.Qeeps.Access
                 var results = await getAllUsersQuery.ExecuteNextAsync<UserEntity>();
                 foreach (var result in results)
                 {
-                    var idUri = UriFactory.CreateDocumentUri("access", "Users", result.Id);
                     result.HasSignedContract = false;
-                    var task = client.UpsertDocumentAsync(idUri, result, new RequestOptions
+                    var task = client.UpsertDocumentAsync(usersCollection, result, new RequestOptions
                     {
                         PartitionKey = new PartitionKey("UserEntity")
                     });
