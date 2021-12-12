@@ -27,7 +27,7 @@ namespace MarsOffice.Qeeps.Access
         }
 
         [FunctionName("PopulateUsersData")]
-        public async Task Run([TimerTrigger("%cron%", RunOnStartup = false)] TimerInfo timerInfo,
+        public async Task Run([TimerTrigger("%cron%", RunOnStartup = true)] TimerInfo timerInfo,
         [Blob("graph-api/delta_users.json", FileAccess.Read)] string deltaFile,
         [Blob("graph-api/delta_users.json", FileAccess.Write)] TextWriter deltaFileWriter,
         [CosmosDB(ConnectionStringSetting = "cdbconnectionstring", PreferredLocations = "%location%")] DocumentClient client
@@ -151,6 +151,8 @@ namespace MarsOffice.Qeeps.Access
 
         private async Task PopulateDelta(DocumentClient client, TextWriter stream, string lastDelta, Application adApp)
         {
+            var allValidRoleIds = adApp.AppRoles.Select(x => x.Id.Value.ToString()).Distinct().ToList();
+
             var usersCollection = UriFactory.CreateDocumentCollectionUri("access", "Users");
             var orgAccessesCollection = UriFactory.CreateDocumentCollectionUri("access", "OrganisationAccesses");
 
@@ -158,6 +160,7 @@ namespace MarsOffice.Qeeps.Access
                             .Users
                             .Delta()
                             .Request();
+
             lastDeltaRequest.QueryOptions.Add(new QueryOption("$deltaToken", lastDelta));
             string nextDelta = null;
             while (lastDeltaRequest != null)
@@ -206,6 +209,10 @@ namespace MarsOffice.Qeeps.Access
                     }
                     else
                     {
+                        var foundRoles = user.AppRoleAssignments.Where(ara => allValidRoleIds.Contains(ara.AppRoleId.Value.ToString()))
+                            .Select(x => adApp.AppRoles.First(z => z.Id.Value.ToString() == x.AppRoleId.Value.ToString()).DisplayName)
+                            .Distinct()
+                            .ToList();
                         UserEntity existingUser = null;
                         try
                         {
@@ -220,6 +227,8 @@ namespace MarsOffice.Qeeps.Access
                         {
                             existingUser.Email = user.Mail;
                             existingUser.Name = user.DisplayName;
+                            existingUser.IsDisabled = user.AccountEnabled != true || foundRoles == null || !foundRoles.Any();
+                            existingUser.Roles = foundRoles;
                         }
                         else
                         {
@@ -227,7 +236,11 @@ namespace MarsOffice.Qeeps.Access
                             {
                                 Email = user.Mail,
                                 Name = user.DisplayName,
-                                Id = user.Id
+                                Id = user.Id,
+                                HasSignedContract = false,
+                                IsDisabled = user.AccountEnabled != true || foundRoles == null || !foundRoles.Any(),
+                                Partition = "UserEntity",
+                                Roles = foundRoles
                             };
                         }
                         await client.UpsertDocumentAsync(usersCollection, existingUser, new RequestOptions
