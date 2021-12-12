@@ -27,7 +27,7 @@ namespace MarsOffice.Qeeps.Access
         }
 
         [FunctionName("PopulateUsersData")]
-        public async Task Run([TimerTrigger("%cron%", RunOnStartup = true)] TimerInfo timerInfo,
+        public async Task Run([TimerTrigger("%cron%", RunOnStartup = false)] TimerInfo timerInfo,
         [Blob("graph-api/delta_users.json", FileAccess.Read)] string deltaFile,
         [Blob("graph-api/delta_users.json", FileAccess.Write)] TextWriter deltaFileWriter,
         [CosmosDB(ConnectionStringSetting = "cdbconnectionstring", PreferredLocations = "%location%")] DocumentClient client
@@ -90,47 +90,66 @@ namespace MarsOffice.Qeeps.Access
                 }
             }
 
+            var adAppRequest = _graphClient
+                .Applications
+                .Request()
+                .Filter($"appId eq '{_config["adappid"]}'");
+
+            var adAppResponse = await adAppRequest.GetAsync();
+            var adApp = adAppResponse.Single();
+
             if (isDbEmpty)
             {
-                await PopulateAllUsers(client);
-                await PopulateDelta(client, deltaFileWriter, lastDelta);
+                await PopulateAllUsers(client, adApp);
+                await PopulateDelta(client, deltaFileWriter, lastDelta, adApp);
             }
             else
             {
-                await PopulateDelta(client, deltaFileWriter, lastDelta);
+                await PopulateDelta(client, deltaFileWriter, lastDelta, adApp);
             }
         }
 
-        private async Task PopulateAllUsers(DocumentClient client)
+        private async Task PopulateAllUsers(DocumentClient client, Application adApp)
         {
+            var allValidRoleIds = adApp.AppRoles.Select(x => x.Id.Value.ToString()).Distinct().ToList();
             var usersCollectionUri = UriFactory.CreateDocumentCollectionUri("access", "Users");
 
             var usersRequest = _graphClient
                 .Users
                 .Request()
-                .Select(x => new { x.Id, x.DisplayName, x.GivenName, x.CompanyName, x.Mail, x.Surname, x.UserPrincipalName });
+                .Expand(x => x.AppRoleAssignments)
+                .Select(x => new { x.Id, x.DisplayName, x.AccountEnabled, x.GivenName, x.CompanyName, x.Mail, x.Surname, x.UserPrincipalName, x.AppRoleAssignments });
+
+            var tasks = new List<Task<ResourceResponse<Document>>>();
 
             while (usersRequest != null)
             {
                 var usersResponse = await usersRequest.GetAsync();
                 foreach (var u in usersResponse)
                 {
+                    var foundRoles = u.AppRoleAssignments.Where(ara => allValidRoleIds.Contains(ara.AppRoleId.Value.ToString()))
+                    .Select(x => adApp.AppRoles.First(z => z.Id.Value.ToString() == x.AppRoleId.Value.ToString()).DisplayName)
+                    .Distinct()
+                    .ToList();
                     var newEntity = new UserEntity
                     {
                         Id = u.Id,
                         Name = u.DisplayName,
-                        Email = u.Mail
+                        Email = u.Mail,
+                        IsDisabled = u.AccountEnabled != true || foundRoles == null || !foundRoles.Any(),
+                        Roles = foundRoles
                     };
-                    await client.UpsertDocumentAsync(usersCollectionUri, newEntity, new RequestOptions
+                    tasks.Add(client.UpsertDocumentAsync(usersCollectionUri, newEntity, new RequestOptions
                     {
                         PartitionKey = new PartitionKey("UserEntity")
-                    }, true);
+                    }, true));
                 }
                 usersRequest = usersResponse.NextPageRequest;
             }
+            await Task.WhenAll(tasks);
         }
 
-        private async Task PopulateDelta(DocumentClient client, TextWriter stream, string lastDelta)
+        private async Task PopulateDelta(DocumentClient client, TextWriter stream, string lastDelta, Application adApp)
         {
             var usersCollection = UriFactory.CreateDocumentCollectionUri("access", "Users");
             var orgAccessesCollection = UriFactory.CreateDocumentCollectionUri("access", "OrganisationAccesses");
