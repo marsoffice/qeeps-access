@@ -3,7 +3,10 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Linq.Expressions;
+using System.Net;
+using System.Net.Http;
 using System.Security.Claims;
+using System.Text;
 using System.Threading.Tasks;
 using AutoMapper;
 using MarsOffice.Qeeps.Access.Abstractions;
@@ -27,11 +30,13 @@ namespace MarsOffice.Qeeps.Access
     {
         private readonly IMapper _mapper;
         private readonly IConfiguration _config;
+        private readonly IHttpClientFactory _httpClientFactory;
 
-        public Users(IMapper mapper, IConfiguration config)
+        public Users(IMapper mapper, IConfiguration config, IHttpClientFactory httpClientFactory)
         {
             _mapper = mapper;
             _config = config;
+            _httpClientFactory = httpClientFactory;
         }
 
         [FunctionName("GetUsers")]
@@ -266,6 +271,17 @@ namespace MarsOffice.Qeeps.Access
                     }
                 };
                 await client.CreateDocumentCollectionIfNotExistsAsync(UriFactory.CreateDatabaseUri("access"), col);
+
+                col = new DocumentCollection
+                {
+                    Id = "Documents",
+                    PartitionKey = new PartitionKeyDefinition
+                    {
+                        Version = PartitionKeyDefinitionVersion.V2,
+                        Paths = new System.Collections.ObjectModel.Collection<string>(new List<string>() { "/Partition" })
+                    }
+                };
+                await client.CreateDocumentCollectionIfNotExistsAsync(UriFactory.CreateDatabaseUri("access"), col);
 #endif
 
                 var principal = QeepsPrincipal.Parse(req);
@@ -298,6 +314,33 @@ namespace MarsOffice.Qeeps.Access
                 {
                     return new StatusCodeResult(400);
                 }
+
+                var contractDocId = UriFactory.CreateDocumentUri("access", "Documents", "contract");
+                var document = (await client.ReadDocumentAsync<DocumentEntity>(contractDocId, new RequestOptions
+                {
+                    PartitionKey = new PartitionKey("DocumentEntity")
+                }))?.Document?.Content;
+
+                if (string.IsNullOrEmpty(document))
+                {
+                    document = "-";
+                }
+
+                var today = DateTime.UtcNow;
+                var htmlSignedContract = document + $"<br /><div>{today.ToShortDateString()} (UTC), {existingUser.Name}</div><br />";
+                htmlSignedContract += $"<img src=\"{payload.SignatureImage}\" width=\"300\" />";
+
+                using var filesClient = _httpClientFactory.CreateClient("access");
+                var filePath = "contracts/" + existingUser.Id + "_" + existingUser.Email + "_" + existingUser.Name + ".html";
+                var fileContent = new MultipartFormDataContent();
+                var fileContentInner = new ByteArrayContent(
+                    Encoding.UTF8.GetBytes(htmlSignedContract)
+                );
+                fileContent.Add(fileContentInner);
+                var reply = await filesClient.PostAsync(
+                    $"/api/files/uploadFromService?path={WebUtility.UrlEncode(filePath)}",
+                 fileContent);
+                reply.EnsureSuccessStatusCode();
 
                 existingUser.HasSignedContract = true;
 
