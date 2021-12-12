@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using MarsOffice.Qeeps.Access.Abstractions;
 using MarsOffice.Qeeps.Access.Entities;
@@ -62,7 +63,9 @@ namespace MarsOffice.Qeeps.Access
             var getAllUsersQuery = client.CreateDocumentQuery<UserEntity>(usersCollection, new FeedOptions
             {
                 PartitionKey = new PartitionKey("UserEntity")
-            }).AsDocumentQuery();
+            })
+            .Where(x => x.HasSignedContract)
+            .AsDocumentQuery();
 
             var tasks = new List<Task<ResourceResponse<Document>>>();
 
