@@ -216,7 +216,6 @@ namespace MarsOffice.Qeeps.Access
                     else
                     {
 
-                        // TODO get app roles for user
                         var fullUserRequest = _graphClient
                             .Users
                             .Request()
