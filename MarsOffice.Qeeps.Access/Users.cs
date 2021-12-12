@@ -316,11 +316,20 @@ namespace MarsOffice.Qeeps.Access
                 }
 
                 var contractDocId = UriFactory.CreateDocumentUri("access", "Documents", "contract");
-                var document = (await client.ReadDocumentAsync<DocumentEntity>(contractDocId, new RequestOptions
-                {
-                    PartitionKey = new PartitionKey("DocumentEntity")
-                }))?.Document?.Content;
 
+                string document;
+                try
+                {
+                    document = (await client.ReadDocumentAsync<DocumentEntity>(contractDocId, new RequestOptions
+                    {
+                        PartitionKey = new PartitionKey("DocumentEntity")
+                    }))?.Document?.Content;
+                }
+                catch (Exception)
+                {
+                    // ignored
+                    document = null;
+                }
                 if (string.IsNullOrEmpty(document))
                 {
                     document = "-";
