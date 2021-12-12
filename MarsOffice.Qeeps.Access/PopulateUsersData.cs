@@ -169,7 +169,8 @@ namespace MarsOffice.Qeeps.Access
             var lastDeltaRequest = _graphClient
                             .Users
                             .Delta()
-                            .Request();
+                            .Request()
+                            .Select("id,mail,displayName,accountEnabled");
 
             lastDeltaRequest.QueryOptions.Add(new QueryOption("$deltaToken", lastDelta));
             string nextDelta = null;
