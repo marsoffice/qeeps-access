@@ -217,8 +217,18 @@ namespace MarsOffice.Qeeps.Access
                     {
 
                         // TODO get app roles for user
+                        var fullUserRequest = _graphClient
+                            .Users
+                            .Request()
+                            .Filter($"id eq '{user.Id}'")
+                            .Expand(x => x.AppRoleAssignments)
+                            .Select(x => new { x.AppRoleAssignments });
 
-                        var foundRoles = user.AppRoleAssignments?.Where(ara => allValidRoleIds.Contains(ara.AppRoleId.Value.ToString()))
+                        var fullUserResponse = await fullUserRequest.GetAsync();
+
+                        var userAppRoles = fullUserResponse.First().AppRoleAssignments;
+
+                        var foundRoles = userAppRoles?.Where(ara => allValidRoleIds.Contains(ara.AppRoleId.Value.ToString()))
                             .Select(x => adApp.AppRoles.First(z => z.Id.Value.ToString() == x.AppRoleId.Value.ToString()).DisplayName)
                             .Distinct()
                             .ToList();
