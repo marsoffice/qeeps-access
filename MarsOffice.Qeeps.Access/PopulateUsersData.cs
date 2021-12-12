@@ -225,7 +225,7 @@ namespace MarsOffice.Qeeps.Access
                             .Request()
                             .Filter($"id eq '{user.Id}'")
                             .Expand(x => x.AppRoleAssignments)
-                            .Select(x => new { x.AppRoleAssignments });
+                            .Select(x => new { x.AppRoleAssignments, x.AccountEnabled });
 
                         var fullUserResponse = await fullUserRequest.GetAsync();
 
