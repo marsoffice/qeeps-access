@@ -137,6 +137,10 @@ namespace MarsOffice.Qeeps.Access
                     .Select(x => adApp.AppRoles.First(z => z.Id.Value.ToString() == x.AppRoleId.Value.ToString()).DisplayName)
                     .Distinct()
                     .ToList();
+                    if (foundRoles == null || !foundRoles.Any())
+                    {
+                        return;
+                    }
                     var newEntity = new UserEntity
                     {
                         Id = u.Id,
@@ -250,6 +254,10 @@ namespace MarsOffice.Qeeps.Access
                         }
                         else
                         {
+                            if (foundRoles == null || !foundRoles.Any())
+                            {
+                                continue;
+                            }
                             existingUser = new UserEntity
                             {
                                 Email = user.Mail,
