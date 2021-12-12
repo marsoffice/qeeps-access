@@ -331,12 +331,13 @@ namespace MarsOffice.Qeeps.Access
                 htmlSignedContract += $"<img src=\"{payload.SignatureImage}\" width=\"300\" />";
 
                 using var filesClient = _httpClientFactory.CreateClient("files");
-                var filePath = "contracts/" + existingUser.Id + "_" + existingUser.Email + "_" + existingUser.Name + ".html";
+                var fileName = existingUser.Id + "_" + existingUser.Email + "_" + existingUser.Name + ".html";
+                var filePath = "contracts/" + fileName;
                 var fileContent = new MultipartFormDataContent();
                 var fileContentInner = new ByteArrayContent(
                     Encoding.UTF8.GetBytes(htmlSignedContract)
                 );
-                fileContent.Add(fileContentInner);
+                fileContent.Add(fileContentInner, "file", fileName);
                 var reply = await filesClient.PostAsync(
                     $"/api/files/uploadFromService?path={WebUtility.UrlEncode(filePath)}",
                  fileContent);
