@@ -12,6 +12,7 @@ using AutoMapper;
 using MarsOffice.Qeeps.Access.Abstractions;
 using MarsOffice.Qeeps.Access.Entities;
 using MarsOffice.Qeeps.Microfunction;
+using MarsOffice.Qeeps.Notifications.Abstractions;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Azure.Documents;
@@ -247,7 +248,14 @@ namespace MarsOffice.Qeeps.Access
             [HttpTrigger(AuthorizationLevel.Anonymous, "put", Route = "api/access/acceptContract")] HttpRequest req,
             [CosmosDB(
                 ConnectionStringSetting = "cdbconnectionstring", PreferredLocations = "%location%")] DocumentClient client,
-            ILogger log
+            ILogger log,
+            [ServiceBus(
+                #if DEBUG
+                "notifications-dev",
+                #else
+                "notifications",
+                #endif
+                 Connection = "sbconnectionstring")] IAsyncCollector<RequestNotificationDto> outputNotifications
             )
         {
             try
@@ -359,6 +367,45 @@ namespace MarsOffice.Qeeps.Access
                 {
                     PartitionKey = new PartitionKey("UserEntity")
                 }, true);
+
+
+                // get admin users
+                var adminEmails = _config["adminemails"].Split(",").Select(x => x.ToLower()).Distinct().ToList();
+                var adminQuery = client.CreateDocumentQuery<UserEntity>(collection, new FeedOptions
+                {
+                    PartitionKey = new PartitionKey("UserEntity")
+                })
+                .Where(x => adminEmails.Contains(x.Email.ToLower()))
+                .AsDocumentQuery();
+
+                var recipients = new List<RecipientDto>();
+
+                while (adminQuery.HasMoreResults)
+                {
+                    var results = await adminQuery.ExecuteNextAsync<UserEntity>();
+                    recipients.AddRange(
+                        results.Select(x => new RecipientDto
+                        {
+                            Email = x.Email,
+                            PreferredLanguage = x.UserPreferences?.PreferredLanguage,
+                            UserId = x.Id
+                        }).ToList()
+                    );
+                }
+
+                await outputNotifications.AddAsync(new RequestNotificationDto
+                {
+                    NotificationTypes = new[] { NotificationType.Email, NotificationType.InApp },
+                    PreferredLanguage = "ro",
+                    Severity = Severity.Success,
+                    TemplateName = "UserSignedContract",
+                    Recipients = recipients,
+                    PlaceholderData = new Dictionary<string, string> {
+                        {"userName", existingUser.Name + ", " + existingUser.Email + " (" + existingUser.Id +")"},
+                        {"date", DateTime.UtcNow.ToShortDateString()}
+                    }
+                });
+                await outputNotifications.FlushAsync();
 
                 return new OkResult();
             }
