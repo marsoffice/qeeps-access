@@ -136,27 +136,9 @@ namespace MarsOffice.Qeeps.Access
 
                 var docId = UriFactory.CreateDocumentUri("access", "Documents", payload.Id);
 
-                DocumentEntity existingDocument = null;
-                try
-                {
-                    existingDocument = (await client.ReadDocumentAsync<DocumentEntity>(docId, new RequestOptions
-                    {
-                        PartitionKey = new PartitionKey("DocumentEntity")
-                    }))?.Document;
-                }
-                catch (Exception) { }
-
-                if (existingDocument == null)
-                {
-                    existingDocument = new DocumentEntity
-                    {
-                        Id = "contract"
-                    };
-                }
-
-                _mapper.Map(payload, existingDocument);
+                var docEntity = _mapper.Map<DocumentEntity>(payload);
                 var collection = UriFactory.CreateDocumentCollectionUri("access", "Documents");
-                await client.UpsertDocumentAsync(collection, existingDocument, new RequestOptions
+                await client.UpsertDocumentAsync(collection, docEntity, new RequestOptions
                 {
                     PartitionKey = new PartitionKey("DocumentEntity")
                 }, true);
