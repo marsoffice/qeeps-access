@@ -401,7 +401,8 @@ namespace MarsOffice.Qeeps.Access
                     TemplateName = "UserSignedContract",
                     Recipients = recipients,
                     PlaceholderData = new Dictionary<string, string> {
-                        {"userName", existingUser.Name + ", " + existingUser.Email + " (" + existingUser.Id +")"},
+                        {"user", existingUser.Name + ", " + existingUser.Email + " (" + existingUser.Id +")"},
+                        {"userName", existingUser.Name },
                         {"date", DateTime.UtcNow.ToShortDateString()}
                     }
                 });
