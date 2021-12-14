@@ -323,6 +323,14 @@ namespace MarsOffice.Qeeps.Access
                     return new StatusCodeResult(400);
                 }
 
+                existingUser.HasSignedContract = true;
+
+                var collection = UriFactory.CreateDocumentCollectionUri("access", "Users");
+                await client.UpsertDocumentAsync(collection, existingUser, new RequestOptions
+                {
+                    PartitionKey = new PartitionKey("UserEntity")
+                }, true);
+
                 var contractDocId = UriFactory.CreateDocumentUri("access", "Documents", "contract");
 
                 string document;
@@ -359,15 +367,6 @@ namespace MarsOffice.Qeeps.Access
                     $"/api/files/uploadFromService?path={WebUtility.UrlEncode(filePath)}",
                  fileContent);
                 reply.EnsureSuccessStatusCode();
-
-                existingUser.HasSignedContract = true;
-
-                var collection = UriFactory.CreateDocumentCollectionUri("access", "Users");
-                await client.UpsertDocumentAsync(collection, existingUser, new RequestOptions
-                {
-                    PartitionKey = new PartitionKey("UserEntity")
-                }, true);
-
 
                 // get admin users
                 var adminEmails = _config["adminemails"].Split(",").Select(x => x.ToLower()).Distinct().ToList();
