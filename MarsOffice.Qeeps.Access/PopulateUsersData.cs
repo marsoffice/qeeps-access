@@ -263,7 +263,6 @@ namespace MarsOffice.Qeeps.Access
                                 Email = user.Mail,
                                 Name = user.DisplayName,
                                 Id = user.Id,
-                                HasSignedContract = false,
                                 IsDisabled = user.AccountEnabled != true || foundRoles == null || !foundRoles.Any(),
                                 Partition = "UserEntity",
                                 Roles = foundRoles

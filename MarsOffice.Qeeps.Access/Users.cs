@@ -216,9 +216,10 @@ namespace MarsOffice.Qeeps.Access
                     .Select(x => new UserEntity
                     {
                         Email = x.Email,
-                        HasSignedContract = x.HasSignedContract,
                         Id = x.Id,
-                        Name = x.Name
+                        Name = x.Name,
+                        IsDisabled = x.IsDisabled,
+                        Roles = x.Roles
                     }).AsDocumentQuery();
                     var response = await entityQuery.ExecuteNextAsync<UserEntity>();
                     found = response.FirstOrDefault();

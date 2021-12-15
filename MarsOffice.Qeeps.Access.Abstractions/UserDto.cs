@@ -9,7 +9,6 @@ namespace MarsOffice.Qeeps.Access.Abstractions
         public string Email { get; set; }
         public IEnumerable<string> Roles { get; set; }
         public bool IsDisabled { get; set; }
-        public bool HasSignedContract { get; set; }
         public UserPreferencesDto UserPreferences { get; set; }
     }
 }

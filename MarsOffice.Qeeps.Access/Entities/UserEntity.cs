@@ -11,7 +11,6 @@ namespace MarsOffice.Qeeps.Access.Entities
         public string Email { get; set; }
         public IEnumerable<string> Roles { get; set; }
         public bool IsDisabled { get; set; }
-        public bool HasSignedContract { get; set; }
         public string Partition { get; set; } = "UserEntity";
         public UserPreferencesEntity UserPreferences { get; set; }
     }
