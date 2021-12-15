@@ -30,7 +30,6 @@ namespace MarsOffice.Qeeps.Access
             var config = builder.GetContext().Configuration;
             builder.Services.AddAutoMapper(typeof(Startup).Assembly);
             builder.Services.AddValidatorsFromAssembly(typeof(Startup).Assembly);
-            builder.Services.AddMicroserviceClients(new[] { "files" }, config);
 
             builder.Services.AddTransient(_ =>
             {
