@@ -128,12 +128,7 @@ namespace MarsOffice.Qeeps.Access
                     {
                         continue;
                     }
-#if DEBUG
-                    if (u.Mail == null || !u.Mail.EndsWith("qoffice.ro"))
-                    {
-                        continue;
-                    }
-#endif
+
                     var newEntity = new UserEntity
                     {
                         Id = u.Id,
@@ -147,11 +142,8 @@ namespace MarsOffice.Qeeps.Access
                         PartitionKey = new PartitionKey("UserEntity")
                     }, true));
                 }
-#if DEBUG
-                usersRequest = null;
-#else
                 usersRequest = usersResponse.NextPageRequest;
-#endif
+
             }
             await Task.WhenAll(tasks);
         }
@@ -190,13 +182,6 @@ namespace MarsOffice.Qeeps.Access
                 {
                     var casted = user as Microsoft.Graph.User;
 
-#if DEBUG
-                    if (casted.Mail == null || !casted.Mail.EndsWith("qoffice.ro"))
-                    {
-                        continue;
-                    }
-#endif
-
                     var newAccessEntity = new OrganisationAccessEntity
                     {
                         OrganisationId = id,
@@ -213,11 +198,7 @@ namespace MarsOffice.Qeeps.Access
                 {
                     await PopulateAllForGroupRecursively(client, child.Id, $"{prefix}_{id}");
                 }
-#if DEBUG
-                membersRequest = null;
-#else
                 membersRequest = response.NextPageRequest;
-#endif
             }
         }
     }
