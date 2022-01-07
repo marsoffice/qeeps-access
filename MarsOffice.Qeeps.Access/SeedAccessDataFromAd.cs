@@ -23,7 +23,7 @@ namespace MarsOffice.Qeeps.Access
         }
 
         [FunctionName("SeedAccessDataFromAd")]
-        public async Task Run([TimerTrigger("0 0 * * * *", RunOnStartup = true
+        public async Task Run([TimerTrigger("%adseedcron%", RunOnStartup = true
         )] TimerInfo timerInfo,
         [CosmosDB(ConnectionStringSetting = "cdbconnectionstring", PreferredLocations = "%location%")] DocumentClient client
         )
