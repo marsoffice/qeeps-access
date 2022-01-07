@@ -19,7 +19,7 @@ namespace MarsOffice.Qeeps.Access
         [FunctionName("AdAuditLogsSync")]
         public async Task Run(
             [BlobTrigger("insights-logs-auditlogs/{name}", Connection = "marsofficesaconnectionstring")]
-            ICloudBlob blob,
+            Stream blobStream,
             string name,
             ILogger log)
         {
@@ -27,7 +27,6 @@ namespace MarsOffice.Qeeps.Access
             {
                 return;
             }
-            var metadata = blob.Metadata;
             log.LogInformation($"C# Blob trigger function Processed blob\n Name:{name} \n Size: Bytes");
             await Task.CompletedTask;
         }

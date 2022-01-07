@@ -11,6 +11,9 @@
     "extensions": {
         "http": {
             "routePrefix": ""
+        },
+        "blobs": {
+            "maxDegreeOfParallelism": "1"
         }
     }
 }
