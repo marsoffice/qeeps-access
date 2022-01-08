@@ -134,7 +134,7 @@ namespace MarsOffice.Qeeps.Access
 
                 if (existingPrefs == null)
                 {
-                    return new StatusCodeResult(400);
+                    existingPrefs = new UserPreferencesEntity();
                 }
 
                 var json = string.Empty;
@@ -146,9 +146,10 @@ namespace MarsOffice.Qeeps.Access
                 {
                     ContractResolver = new CamelCasePropertyNamesContractResolver()
                 });
-                var entity = _mapper.Map<UserPreferencesEntity>(payload);
 
-                _mapper.Map(payload, entity);
+                existingPrefs.Id = userId;
+                existingPrefs.PreferredLanguage = payload.PreferredLanguage;
+                existingPrefs.UseDarkTheme = payload.UseDarkTheme;
 
                 var collection = UriFactory.CreateDocumentCollectionUri("access", "UserPreferences");
                 await client.UpsertDocumentAsync(collection, existingPrefs, new RequestOptions
