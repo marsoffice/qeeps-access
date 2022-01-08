@@ -1,6 +1,5 @@
 using System;
 using System.IO;
-using FluentValidation;
 using Microsoft.Azure.Functions.Extensions.DependencyInjection;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -22,9 +21,7 @@ namespace MarsOffice.Qeeps.Access
 
         public override void Configure(IFunctionsHostBuilder builder)
         {
-            var config = builder.GetContext().Configuration;
             builder.Services.AddAutoMapper(typeof(Startup).Assembly);
-            builder.Services.AddValidatorsFromAssembly(typeof(Startup).Assembly);
         }
     }
 }
