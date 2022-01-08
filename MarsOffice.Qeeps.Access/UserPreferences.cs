@@ -3,9 +3,9 @@ using System.Collections.Generic;
 using System.IO;
 using System.Threading.Tasks;
 using AutoMapper;
+using MarsOffice.Microfunction;
 using MarsOffice.Qeeps.Access.Abstractions;
 using MarsOffice.Qeeps.Access.Entities;
-using MarsOffice.Qeeps.Microfunction;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Azure.Documents;
@@ -49,7 +49,7 @@ namespace MarsOffice.Qeeps.Access
 
                 var col = new DocumentCollection
                 {
-                    Id = "Users",
+                    Id = "UserPreferences",
                     PartitionKey = new PartitionKeyDefinition
                     {
                         Version = PartitionKeyDefinitionVersion.V2,
@@ -58,24 +58,24 @@ namespace MarsOffice.Qeeps.Access
                 };
                 await client.CreateDocumentCollectionIfNotExistsAsync(UriFactory.CreateDatabaseUri("access"), col);
 #endif
-                var principal = QeepsPrincipal.Parse(req);
+                var principal = MarsOfficePrincipal.Parse(req);
                 var userId = principal.FindFirst("id").Value;
-                var docId = UriFactory.CreateDocumentUri("access", "Users", userId);
+                var docId = UriFactory.CreateDocumentUri("access", "UserPreferences", userId);
 
-                UserEntity foundSettingsResponse = null;
+                UserPreferencesEntity foundSettingsResponse = null;
                 try
                 {
-                    foundSettingsResponse = (await client.ReadDocumentAsync<UserEntity>(docId, new RequestOptions
+                    foundSettingsResponse = (await client.ReadDocumentAsync<UserPreferencesEntity>(docId, new RequestOptions
                     {
-                        PartitionKey = new PartitionKey("UserEntity")
+                        PartitionKey = new PartitionKey("UserPreferencesEntity")
                     }))?.Document;
                 }
                 catch (Exception) { }
-                if (foundSettingsResponse?.UserPreferences == null)
+                if (foundSettingsResponse == null)
                 {
                     return new JsonResult(null);
                 }
-                return new JsonResult(_mapper.Map<UserPreferencesDto>(foundSettingsResponse.UserPreferences), new JsonSerializerSettings
+                return new JsonResult(_mapper.Map<UserPreferencesDto>(foundSettingsResponse), new JsonSerializerSettings
                 {
                     ContractResolver = new CamelCasePropertyNamesContractResolver()
                 });
@@ -107,7 +107,7 @@ namespace MarsOffice.Qeeps.Access
 
                 var col = new DocumentCollection
                 {
-                    Id = "Users",
+                    Id = "UserPreferences",
                     PartitionKey = new PartitionKeyDefinition
                     {
                         Version = PartitionKeyDefinitionVersion.V2,
@@ -117,22 +117,22 @@ namespace MarsOffice.Qeeps.Access
                 await client.CreateDocumentCollectionIfNotExistsAsync(UriFactory.CreateDatabaseUri("access"), col);
 #endif
 
-                var principal = QeepsPrincipal.Parse(req);
+                var principal = MarsOfficePrincipal.Parse(req);
                 var userId = principal.FindFirst("id").Value;
 
-                var docId = UriFactory.CreateDocumentUri("access", "Users", userId);
+                var docId = UriFactory.CreateDocumentUri("access", "UserPreferences", userId);
 
-                UserEntity existingUser = null;
+                UserPreferencesEntity existingPrefs = null;
                 try
                 {
-                    existingUser = (await client.ReadDocumentAsync<UserEntity>(docId, new RequestOptions
+                    existingPrefs = (await client.ReadDocumentAsync<UserPreferencesEntity>(docId, new RequestOptions
                     {
-                        PartitionKey = new PartitionKey("UserEntity")
+                        PartitionKey = new PartitionKey("UserPreferencesEntity")
                     }))?.Document;
                 }
                 catch (Exception) { }
 
-                if (existingUser == null)
+                if (existingPrefs == null)
                 {
                     return new StatusCodeResult(400);
                 }
@@ -148,11 +148,12 @@ namespace MarsOffice.Qeeps.Access
                 });
                 var entity = _mapper.Map<UserPreferencesEntity>(payload);
 
-                existingUser.UserPreferences = entity;
-                var collection = UriFactory.CreateDocumentCollectionUri("access", "Users");
-                await client.UpsertDocumentAsync(collection, existingUser, new RequestOptions
+                _mapper.Map(payload, entity);
+
+                var collection = UriFactory.CreateDocumentCollectionUri("access", "UserPreferences");
+                await client.UpsertDocumentAsync(collection, existingPrefs, new RequestOptions
                 {
-                    PartitionKey = new PartitionKey("UserEntity")
+                    PartitionKey = new PartitionKey("UserPreferencesEntity")
                 }, true);
 
                 return new OkResult();

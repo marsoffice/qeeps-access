@@ -1,8 +1,12 @@
+using Newtonsoft.Json;
+
 namespace MarsOffice.Qeeps.Access.Entities
 {
     public class UserPreferencesEntity
     {
-        public string PreferredLanguage {get;set;}
-        public bool? UseDarkTheme {get;set;}
+        [JsonProperty("id")]
+        public string Id { get; set; }
+        public string PreferredLanguage { get; set; }
+        public bool? UseDarkTheme { get; set; }
     }
 }
