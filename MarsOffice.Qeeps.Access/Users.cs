@@ -21,10 +21,12 @@ namespace MarsOffice.Qeeps.Access
     public class Users
     {
         private readonly HttpClient _opaClient;
+        private readonly IMapper _mapper;
 
-        public Users(IHttpClientFactory httpClientFactory)
+        public Users(IHttpClientFactory httpClientFactory, IMapper mapper)
         {
             _opaClient = httpClientFactory.CreateClient("OPA");
+            _mapper = mapper;
         }
 
         [FunctionName("GetUsers")]
@@ -57,7 +59,7 @@ namespace MarsOffice.Qeeps.Access
                 var opaJson = await opaResponse.Content.ReadAsStringAsync();
                 var opaResponseData = JsonConvert.DeserializeObject<OpaResponseDto<IEnumerable<UserDto>>>(opaJson, new JsonSerializerSettings { ContractResolver = new CamelCasePropertyNamesContractResolver() });
 
-                return new OkObjectResult(opaResponseData.Result);
+                return new OkObjectResult(_mapper.Map<IEnumerable<Abstractions.UserDto>>(opaResponseData.Result));
             }
             catch (Exception e)
             {
@@ -95,7 +97,7 @@ namespace MarsOffice.Qeeps.Access
                 var opaResponseData = JsonConvert.DeserializeObject<OpaResponseDto<IEnumerable<UserDto>>>(opaJson, new JsonSerializerSettings { ContractResolver = new CamelCasePropertyNamesContractResolver() });
 
                 return new OkObjectResult(
-                   opaResponseData.Result.ElementAt(0)
+                   _mapper.Map<Abstractions.UserDto>(opaResponseData.Result.ElementAt(0))
                 );
             }
             catch (Exception e)
@@ -129,7 +131,7 @@ namespace MarsOffice.Qeeps.Access
                 var opaResponseData = JsonConvert.DeserializeObject<OpaResponseDto<IEnumerable<UserDto>>>(opaJson, new JsonSerializerSettings { ContractResolver = new CamelCasePropertyNamesContractResolver() });
 
                 return new OkObjectResult(
-                    opaResponseData.Result.ElementAt(0)
+                    _mapper.Map<Abstractions.UserDto>(opaResponseData.Result.ElementAt(0))
                 );
             }
             catch (Exception e)
@@ -165,7 +167,7 @@ namespace MarsOffice.Qeeps.Access
                 opaResponse.EnsureSuccessStatusCode();
                 var opaJson = await opaResponse.Content.ReadAsStringAsync();
                 var opaResponseData = JsonConvert.DeserializeObject<OpaResponseDto<IEnumerable<UserDto>>>(opaJson, new JsonSerializerSettings { ContractResolver = new CamelCasePropertyNamesContractResolver() });
-                return new OkObjectResult(opaResponseData);
+                return new OkObjectResult(_mapper.Map<IEnumerable<Abstractions.UserDto>>(opaResponseData.Result));
             }
             catch (Exception e)
             {

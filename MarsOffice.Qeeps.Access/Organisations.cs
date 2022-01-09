@@ -3,8 +3,10 @@ using System.Collections.Generic;
 using System.Net.Http;
 using System.Security.Claims;
 using System.Threading.Tasks;
+using AutoMapper;
 using MarsOffice.Dto;
 using MarsOffice.Microfunction;
+using MarsOffice.Qeeps.Access.Abstractions;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Azure.WebJobs;
@@ -15,13 +17,15 @@ using Newtonsoft.Json.Serialization;
 
 namespace MarsOffice.Qeeps.Access
 {
+
     public class Organisations
     {
-
+        private readonly IMapper _mapper;
         private readonly HttpClient _opaClient;
-        public Organisations(IHttpClientFactory httpClientFactory)
+        public Organisations(IHttpClientFactory httpClientFactory, IMapper mapper)
         {
             _opaClient = httpClientFactory.CreateClient("OPA");
+            _mapper = mapper;
         }
 
         [FunctionName("MyOrganisationsTree")]
@@ -47,7 +51,7 @@ namespace MarsOffice.Qeeps.Access
                 var opaJson = await opaResponse.Content.ReadAsStringAsync();
                 var opaResponseData = JsonConvert.DeserializeObject<OpaResponseDto<IEnumerable<GroupDto>>>(opaJson, new JsonSerializerSettings { ContractResolver = new CamelCasePropertyNamesContractResolver() });
 
-                return new OkObjectResult(opaResponseData.Result);
+                return new OkObjectResult(_mapper.Map<IEnumerable<OrganisationDto>>(opaResponseData.Result));
             }
             catch (Exception e)
             {
@@ -77,7 +81,7 @@ namespace MarsOffice.Qeeps.Access
                 opaResponse.EnsureSuccessStatusCode();
                 var opaJson = await opaResponse.Content.ReadAsStringAsync();
                 var opaResponseData = JsonConvert.DeserializeObject<OpaResponseDto<IEnumerable<GroupDto>>>(opaJson, new JsonSerializerSettings { ContractResolver = new CamelCasePropertyNamesContractResolver() });
-                return new OkObjectResult(opaResponseData.Result);
+                return new OkObjectResult(_mapper.Map<IEnumerable<OrganisationDto>>(opaResponseData.Result));
             }
             catch (Exception e)
             {
@@ -114,7 +118,7 @@ namespace MarsOffice.Qeeps.Access
                 opaResponse.EnsureSuccessStatusCode();
                 var opaJson = await opaResponse.Content.ReadAsStringAsync();
                 var opaResponseData = JsonConvert.DeserializeObject<OpaResponseDto<IEnumerable<GroupDto>>>(opaJson, new JsonSerializerSettings { ContractResolver = new CamelCasePropertyNamesContractResolver() });
-                return new OkObjectResult(opaResponseData.Result);
+                return new OkObjectResult(_mapper.Map<IEnumerable<OrganisationDto>>(opaResponseData.Result));
             }
             catch (Exception e)
             {
