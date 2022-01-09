@@ -14,6 +14,7 @@ using Microsoft.Azure.WebJobs;
 using Microsoft.Azure.WebJobs.Extensions.Http;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Serialization;
 
 namespace MarsOffice.Qeeps.Access
 {
@@ -47,16 +48,18 @@ namespace MarsOffice.Qeeps.Access
                 var json = await streamReader.ReadToEndAsync();
                 var ids = JsonConvert.DeserializeObject<IEnumerable<string>>(json);
 
-                var opaPayload = new StringContent(JsonConvert.SerializeObject(new
+                var opaPayload = new StringContent(JsonConvert.SerializeObject(new OpaInputDto<OpaIdsDto>
                 {
-                    ids
-                }));
+                    Input = new OpaIdsDto {
+                        Ids = ids
+                    }
+                }, new JsonSerializerSettings { ContractResolver = new CamelCasePropertyNamesContractResolver() }));
                 var opaResponse = await _opaClient.PostAsync("/v1/data/usr/getUsersByIds", opaPayload);
                 opaResponse.EnsureSuccessStatusCode();
                 var opaJson = await opaResponse.Content.ReadAsStringAsync();
-                var opaResponseData = JsonConvert.DeserializeObject<IEnumerable<UserDto>>(opaJson);
+                var opaResponseData = JsonConvert.DeserializeObject<OpaResponseDto<IEnumerable<UserDto>>>(opaJson, new JsonSerializerSettings { ContractResolver = new CamelCasePropertyNamesContractResolver() });
 
-                return new OkObjectResult(opaResponseData);
+                return new OkObjectResult(opaResponseData.Result);
             }
             catch (Exception e)
             {
@@ -81,17 +84,20 @@ namespace MarsOffice.Qeeps.Access
                 }
                 var id = req.RouteValues["id"].ToString();
 
-                var opaPayload = new StringContent(JsonConvert.SerializeObject(new
+                var opaPayload = new StringContent(JsonConvert.SerializeObject(new OpaInputDto<OpaIdsDto>
                 {
-                    ids = new [] {id}
-                }));
+                    Input = new OpaIdsDto
+                    {
+                        Ids = ids
+                    }
+                }, new JsonSerializerSettings { ContractResolver = new CamelCasePropertyNamesContractResolver() }));
                 var opaResponse = await _opaClient.PostAsync("/v1/data/usr/getUsersByIds", opaPayload);
                 opaResponse.EnsureSuccessStatusCode();
                 var opaJson = await opaResponse.Content.ReadAsStringAsync();
-                var opaResponseData = JsonConvert.DeserializeObject<IEnumerable<UserDto>>(opaJson);
+                var opaResponseData = JsonConvert.DeserializeObject<OpaResponseDto<IEnumerable<UserDto>>>(opaJson, new JsonSerializerSettings { ContractResolver = new CamelCasePropertyNamesContractResolver() });
 
                 return new OkObjectResult(
-                    _mapper.Map<UserDto>(opaResponseData.ElementAt(0))
+                    _mapper.Map<UserDto>(opaResponseData.Result.ElementAt(0))
                 );
             }
             catch (Exception e)
@@ -109,20 +115,23 @@ namespace MarsOffice.Qeeps.Access
         {
             try
             {
-               
+
                 var principal = MarsOfficePrincipal.Parse(req);
                 var id = principal.FindFirstValue("id");
-                var opaPayload = new StringContent(JsonConvert.SerializeObject(new
+                var opaPayload = new StringContent(JsonConvert.SerializeObject(new OpaInputDto<OpaIdsDto>
                 {
-                    ids = new [] {id}
-                }));
+                    Input = new OpaIdsDto
+                    {
+                        Ids = ids
+                    }
+                }, new JsonSerializerSettings { ContractResolver = new CamelCasePropertyNamesContractResolver() }));
                 var opaResponse = await _opaClient.PostAsync("/v1/data/usr/getUsersByIds", opaPayload);
                 opaResponse.EnsureSuccessStatusCode();
                 var opaJson = await opaResponse.Content.ReadAsStringAsync();
-                var opaResponseData = JsonConvert.DeserializeObject<IEnumerable<UserDto>>(opaJson);
+                var opaResponseData = JsonConvert.DeserializeObject<OpaResponseDto<IEnumerable<UserDto>>>(opaJson, new JsonSerializerSettings { ContractResolver = new CamelCasePropertyNamesContractResolver() });
 
                 return new OkObjectResult(
-                    _mapper.Map<UserDto>(opaResponseData.ElementAt(0))
+                    _mapper.Map<UserDto>(opaResponseData.Result.ElementAt(0))
                 );
             }
             catch (Exception e)
@@ -139,21 +148,25 @@ namespace MarsOffice.Qeeps.Access
             ILogger log
             )
         {
-            try {
+            try
+            {
                 var env = Environment.GetEnvironmentVariable("AZURE_FUNCTIONS_ENVIRONMENT") ?? "Development";
                 if (env != "Development" && principal.FindFirstValue("roles") != "Application")
                 {
                     return new StatusCodeResult(401);
                 }
                 var organisationId = req.RouteValues["organisationId"].ToString();
-                var opaPayload = new StringContent(JsonConvert.SerializeObject(new
+                var opaPayload = new StringContent(JsonConvert.SerializeObject(new OpaInputDto<OpaIdDto>
                 {
-                    id = organisationId
-                }));
+                    Input = new OpaIdDto
+                    {
+                        Id = organisationId
+                    }
+                }, new JsonSerializerSettings { ContractResolver = new CamelCasePropertyNamesContractResolver() }));
                 var opaResponse = await _opaClient.PostAsync("/v1/data/grp/getUsersByGroupId", opaPayload);
                 opaResponse.EnsureSuccessStatusCode();
                 var opaJson = await opaResponse.Content.ReadAsStringAsync();
-                var opaResponseData = JsonConvert.DeserializeObject<IEnumerable<UserDto>>(opaJson);
+                var opaResponseData = JsonConvert.DeserializeObject<OpaResponseDto<IEnumerable<UserDto>>>(opaJson, new JsonSerializerSettings { ContractResolver = new CamelCasePropertyNamesContractResolver() });
                 return new OkObjectResult(opaResponseData);
             }
             catch (Exception e)
