@@ -88,7 +88,7 @@ namespace MarsOffice.Qeeps.Access
                 {
                     Input = new OpaIdsDto
                     {
-                        Ids = ids
+                        Ids = new [] {id}
                     }
                 }, new JsonSerializerSettings { ContractResolver = new CamelCasePropertyNamesContractResolver() }));
                 var opaResponse = await _opaClient.PostAsync("/v1/data/usr/getUsersByIds", opaPayload);
@@ -122,7 +122,7 @@ namespace MarsOffice.Qeeps.Access
                 {
                     Input = new OpaIdsDto
                     {
-                        Ids = ids
+                        Ids = new [] {id}
                     }
                 }, new JsonSerializerSettings { ContractResolver = new CamelCasePropertyNamesContractResolver() }));
                 var opaResponse = await _opaClient.PostAsync("/v1/data/usr/getUsersByIds", opaPayload);
