@@ -8,6 +8,5 @@ namespace MarsOffice.Qeeps.Access.Abstractions
         public string Name { get; set; }
         public string Email { get; set; }
         public bool IsDisabled { get; set; }
-        public UserPreferencesDto UserPreferences { get; set; }
     }
 }
