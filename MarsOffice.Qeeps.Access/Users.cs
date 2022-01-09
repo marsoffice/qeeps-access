@@ -47,9 +47,12 @@ namespace MarsOffice.Qeeps.Access
                 var json = await streamReader.ReadToEndAsync();
                 var ids = JsonConvert.DeserializeObject<IEnumerable<string>>(json);
 
-                var opaResponse = await _opaClient.PostAsJsonAsync("/v1/data/usr/getUsersByIds", new {
+                var opaPayload = new StringContent(JsonConvert.SerializeObject(new
+                {
                     ids
-                });
+                }));
+                var opaResponse = await _opaClient.PostAsync("/v1/data/usr/getUsersByIds", opaPayload);
+                opaResponse.EnsureSuccessStatusCode();
                 var opaJson = await opaResponse.Content.ReadAsStringAsync();
                 var opaResponseData = JsonConvert.DeserializeObject<IEnumerable<UserDto>>(opaJson);
 
@@ -78,10 +81,12 @@ namespace MarsOffice.Qeeps.Access
                 }
                 var id = req.RouteValues["id"].ToString();
 
-                var opaResponse = await _opaClient.PostAsJsonAsync("/v1/data/usr/getUsersByIds", new
+                var opaPayload = new StringContent(JsonConvert.SerializeObject(new
                 {
-                    ids = new [] { id }
-                });
+                    ids = new [] {id}
+                }));
+                var opaResponse = await _opaClient.PostAsync("/v1/data/usr/getUsersByIds", opaPayload);
+                opaResponse.EnsureSuccessStatusCode();
                 var opaJson = await opaResponse.Content.ReadAsStringAsync();
                 var opaResponseData = JsonConvert.DeserializeObject<IEnumerable<UserDto>>(opaJson);
 
@@ -107,10 +112,12 @@ namespace MarsOffice.Qeeps.Access
                
                 var principal = MarsOfficePrincipal.Parse(req);
                 var id = principal.FindFirstValue("id");
-                var opaResponse = await _opaClient.PostAsJsonAsync("/v1/data/usr/getUsersByIds", new
+                var opaPayload = new StringContent(JsonConvert.SerializeObject(new
                 {
-                    ids = new[] { id }
-                });
+                    ids = new [] {id}
+                }));
+                var opaResponse = await _opaClient.PostAsync("/v1/data/usr/getUsersByIds", opaPayload);
+                opaResponse.EnsureSuccessStatusCode();
                 var opaJson = await opaResponse.Content.ReadAsStringAsync();
                 var opaResponseData = JsonConvert.DeserializeObject<IEnumerable<UserDto>>(opaJson);
 
@@ -139,10 +146,12 @@ namespace MarsOffice.Qeeps.Access
                     return new StatusCodeResult(401);
                 }
                 var organisationId = req.RouteValues["organisationId"].ToString();
-                var opaResponse = await _opaClient.PostAsJsonAsync("/v1/data/grp/getUsersByGroupId", new
+                var opaPayload = new StringContent(JsonConvert.SerializeObject(new
                 {
                     id = organisationId
-                });
+                }));
+                var opaResponse = await _opaClient.PostAsync("/v1/data/grp/getUsersByGroupId", opaPayload);
+                opaResponse.EnsureSuccessStatusCode();
                 var opaJson = await opaResponse.Content.ReadAsStringAsync();
                 var opaResponseData = JsonConvert.DeserializeObject<IEnumerable<UserDto>>(opaJson);
                 return new OkObjectResult(opaResponseData);
