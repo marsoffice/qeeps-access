@@ -20,12 +20,10 @@ namespace MarsOffice.Qeeps.Access
 {
     public class Users
     {
-        private readonly IMapper _mapper;
         private readonly HttpClient _opaClient;
 
-        public Users(IMapper mapper, IHttpClientFactory httpClientFactory)
+        public Users(IHttpClientFactory httpClientFactory)
         {
-            _mapper = mapper;
             _opaClient = httpClientFactory.CreateClient("OPA");
         }
 
@@ -97,7 +95,7 @@ namespace MarsOffice.Qeeps.Access
                 var opaResponseData = JsonConvert.DeserializeObject<OpaResponseDto<IEnumerable<UserDto>>>(opaJson, new JsonSerializerSettings { ContractResolver = new CamelCasePropertyNamesContractResolver() });
 
                 return new OkObjectResult(
-                    _mapper.Map<UserDto>(opaResponseData.Result.ElementAt(0))
+                   opaResponseData.Result.ElementAt(0)
                 );
             }
             catch (Exception e)
@@ -131,7 +129,7 @@ namespace MarsOffice.Qeeps.Access
                 var opaResponseData = JsonConvert.DeserializeObject<OpaResponseDto<IEnumerable<UserDto>>>(opaJson, new JsonSerializerSettings { ContractResolver = new CamelCasePropertyNamesContractResolver() });
 
                 return new OkObjectResult(
-                    _mapper.Map<UserDto>(opaResponseData.Result.ElementAt(0))
+                    opaResponseData.Result.ElementAt(0)
                 );
             }
             catch (Exception e)
