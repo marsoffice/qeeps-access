@@ -22,7 +22,9 @@ namespace MarsOffice.Qeeps.Access
         public override void Configure(IFunctionsHostBuilder builder)
         {
             var config = builder.GetContext().Configuration;
-            builder.Services.AddAutoMapper(typeof(Startup).Assembly);
+            builder.Services.AddAutoMapper((svc, cfg) => {
+                cfg.AllowNullCollections = true;
+            }, typeof(Startup).Assembly);
             builder.Services.AddOpaClient(config["opaurl"], config["opatoken"]);
         }
     }
