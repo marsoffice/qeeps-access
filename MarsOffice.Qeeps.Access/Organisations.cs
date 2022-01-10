@@ -49,7 +49,6 @@ namespace MarsOffice.Qeeps.Access
                 var opaResponse = await _opaClient.PostAsync("/v1/data/grp/getUserGroupsByUserId", opaPayload);
                 opaResponse.EnsureSuccessStatusCode();
                 var opaJson = await opaResponse.Content.ReadAsStringAsync();
-                log.LogInformation("OPARESPONSE: " + opaJson);
                 var opaResponseData = JsonConvert.DeserializeObject<OpaResponseDto<IEnumerable<GroupDto>>>(opaJson, new JsonSerializerSettings { ContractResolver = new CamelCasePropertyNamesContractResolver() });
 
                 return new OkObjectResult(_mapper.Map<IEnumerable<OrganisationDto>>(opaResponseData.Result));
