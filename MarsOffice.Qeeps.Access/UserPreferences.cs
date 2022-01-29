@@ -56,7 +56,7 @@ namespace MarsOffice.Qeeps.Access
                     PartitionKey = new PartitionKeyDefinition
                     {
                         Version = PartitionKeyDefinitionVersion.V2,
-                        Paths = new System.Collections.ObjectModel.Collection<string>(new List<string>() { "/Partition" })
+                        Paths = new System.Collections.ObjectModel.Collection<string>(new List<string>() { "/id" })
                     }
                 };
                 await client.CreateDocumentCollectionIfNotExistsAsync(UriFactory.CreateDatabaseUri("access"), col);
@@ -70,7 +70,7 @@ namespace MarsOffice.Qeeps.Access
                 {
                     foundSettingsResponse = (await client.ReadDocumentAsync<UserPreferencesEntity>(docId, new RequestOptions
                     {
-                        PartitionKey = new PartitionKey("UserPreferencesEntity")
+                        PartitionKey = new PartitionKey(userId)
                     }))?.Document;
                 }
                 catch (Exception) { }
@@ -114,7 +114,7 @@ namespace MarsOffice.Qeeps.Access
                     PartitionKey = new PartitionKeyDefinition
                     {
                         Version = PartitionKeyDefinitionVersion.V2,
-                        Paths = new System.Collections.ObjectModel.Collection<string>(new List<string>() { "/Partition" })
+                        Paths = new System.Collections.ObjectModel.Collection<string>(new List<string>() { "/id" })
                     }
                 };
                 await client.CreateDocumentCollectionIfNotExistsAsync(UriFactory.CreateDatabaseUri("access"), col);
@@ -130,7 +130,7 @@ namespace MarsOffice.Qeeps.Access
                 {
                     existingPrefs = (await client.ReadDocumentAsync<UserPreferencesEntity>(docId, new RequestOptions
                     {
-                        PartitionKey = new PartitionKey("UserPreferencesEntity")
+                        PartitionKey = new PartitionKey(userId)
                     }))?.Document;
                 }
                 catch (Exception) { }
@@ -157,7 +157,7 @@ namespace MarsOffice.Qeeps.Access
                 var collection = UriFactory.CreateDocumentCollectionUri("access", "UserPreferences");
                 await client.UpsertDocumentAsync(collection, existingPrefs, new RequestOptions
                 {
-                    PartitionKey = new PartitionKey("UserPreferencesEntity")
+                    PartitionKey = new PartitionKey(userId),
                 }, true);
 
                 return new OkResult();
@@ -193,7 +193,7 @@ namespace MarsOffice.Qeeps.Access
                     PartitionKey = new PartitionKeyDefinition
                     {
                         Version = PartitionKeyDefinitionVersion.V2,
-                        Paths = new System.Collections.ObjectModel.Collection<string>(new List<string>() { "/Partition" })
+                        Paths = new System.Collections.ObjectModel.Collection<string>(new List<string>() { "/id" })
                     }
                 };
                 await client.CreateDocumentCollectionIfNotExistsAsync(UriFactory.CreateDatabaseUri("access"), col);
@@ -218,7 +218,7 @@ namespace MarsOffice.Qeeps.Access
                 var userPrefsCol = UriFactory.CreateDocumentCollectionUri("access", "userPreferences");
                 var query = client.CreateDocumentQuery<UserPreferencesEntity>(userPrefsCol, new FeedOptions
                 {
-                    PartitionKey = new PartitionKey("UserPreferencesEntity")
+                    EnableCrossPartitionQuery = true
                 })
                 .Where(x => payload.Contains(x.Id))
                 .AsDocumentQuery();

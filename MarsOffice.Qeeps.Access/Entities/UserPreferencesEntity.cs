@@ -8,6 +8,5 @@ namespace MarsOffice.Qeeps.Access.Entities
         public string Id { get; set; }
         public string PreferredLanguage { get; set; }
         public bool? UseDarkTheme { get; set; }
-        public string Partition { get; set; } = "UserPreferencesEntity";
     }
 }
